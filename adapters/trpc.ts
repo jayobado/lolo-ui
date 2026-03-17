@@ -45,20 +45,28 @@ function createTrpcTransport(options: TrpcAdapterOptions): Transport {
 		return json.data as T
 	}
 
-	async function query<TInput, TOutput>(path: string, input: TInput): Promise<TOutput> {
-		const queryStr = input !== undefined && input !== null
+	async function query<TInput, TOutput>(
+		path: string,
+		input: TInput
+	): Promise<TOutput> {
+		const qs = input != null
 			? `?input=${encodeURIComponent(JSON.stringify(input))}`
 			: ''
-		const res = await fetch(`${baseUrl}/${path}${queryStr}`, {
+		const res = await fetch(`${baseUrl}/${path}${qs}`, {
 			method: 'GET',
+			credentials: 'same-origin', // ← ensures cookie is sent
 			headers: { 'Content-Type': 'application/json', ...getHeaders() },
 		})
 		return handleResponse<TOutput>(res)
 	}
 
-	async function mutate<TInput, TOutput>(path: string, input: TInput): Promise<TOutput> {
+	async function mutate<TInput, TOutput>(
+		path: string,
+		input: TInput
+	): Promise<TOutput> {
 		const res = await fetch(`${baseUrl}/${path}`, {
 			method: 'POST',
+			credentials: 'same-origin', // ← ensures cookie is sent
 			headers: { 'Content-Type': 'application/json', ...getHeaders() },
 			body: JSON.stringify(input ?? {}),
 		})
@@ -70,18 +78,15 @@ function createTrpcTransport(options: TrpcAdapterOptions): Transport {
 		input: TInput,
 		callbacks: SubscriptionCallbacks<TOutput>
 	): () => void {
-		const headers = getHeaders()
-		const token = headers['Authorization']?.replace('Bearer ', '')
 		const inputStr = encodeURIComponent(JSON.stringify(input ?? {}))
-		const authStr = token ? `&token=${encodeURIComponent(token)}` : ''
-		const url = `${baseUrl}/${path}/subscribe?input=${inputStr}${authStr}`
+		// EventSource always sends cookies automatically — no token param needed
+		const url = `${baseUrl}/${path}/subscribe?input=${inputStr}`
 
-		const source = new EventSource(url)
+		const source = new EventSource(url, { withCredentials: true })
 
 		source.addEventListener('message', (e: MessageEvent) => {
 			try {
-				const parsed = JSON.parse(e.data) as { data: TOutput }
-				callbacks.onData(parsed.data)
+				callbacks.onData(JSON.parse((e as MessageEvent<string>).data).data as TOutput)
 			} catch (err) {
 				callbacks.onError?.(err instanceof Error ? err : new Error(String(err)))
 			}
@@ -97,6 +102,7 @@ function createTrpcTransport(options: TrpcAdapterOptions): Transport {
 
 		return () => source.close()
 	}
+
 
 	return { query, mutate, subscribe }
 }
