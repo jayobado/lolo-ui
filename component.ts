@@ -1,22 +1,26 @@
-import { effect } from './signals.ts'
+import { effect as effectFn } from './signals.ts'
 
 type CleanupFn = () => void
 
-interface ComponentContext {
+export interface ComponentContext {
 	onMount: (fn: () => void | Promise<void>) => void
 	onUnmount: (fn: CleanupFn) => void
+	effect: (fn: () => void) => void
 }
 
-export interface ComponentDefinition<
-	P extends Record<string, unknown> = Record<string, unknown>
-> {
-	(props: P): HTMLElement
-	_isComponent: true
+export interface ComponentDefinition<P extends Record<string, unknown> = Record<string, unknown>> {
+  (props: P): HTMLElement
+  _isComponent: true
 }
+
+// ─── Lifecycle registries ─────────────────────────────────────────────────
+// WeakMap so entries are garbage collected when the element is removed
 
 const mountCallbacks = new WeakMap<HTMLElement, Array<() => void | Promise<void>>>()
 const unmountCallbacks = new WeakMap<HTMLElement, CleanupFn[]>()
 const effectCleanups = new WeakMap<HTMLElement, CleanupFn[]>()
+
+// ─── Lifecycle runners — called by the router ─────────────────────────────
 
 export function runMount(el: HTMLElement): void {
 	mountCallbacks.get(el)?.forEach(fn => fn())
@@ -27,9 +31,9 @@ export function runUnmount(el: HTMLElement): void {
 	effectCleanups.get(el)?.forEach(fn => fn())
 }
 
-export function defineComponent<
-	P extends Record<string, unknown> = Record<string, unknown>
->(
+// ─── defineComponent ──────────────────────────────────────────────────────
+
+export function defineComponent<P extends Record<string, unknown> = Record<string, unknown>>(
 	setup: (props: P, ctx: ComponentContext) => HTMLElement
 ): ComponentDefinition<P> {
 	const factory = (props: P): HTMLElement => {
@@ -39,7 +43,15 @@ export function defineComponent<
 
 		const ctx: ComponentContext = {
 			onMount: fn => mounts.push(fn),
+
 			onUnmount: fn => unmounts.push(fn),
+
+			// Effects registered here are automatically disposed when the
+			// component unmounts — no manual cleanup needed in the component
+			effect: fn => {
+				const dispose = effectFn(fn)
+				cleanups.push(dispose)
+			},
 		}
 
 		const rootEl = setup(props, ctx)
@@ -53,14 +65,4 @@ export function defineComponent<
 
 	;(factory as ComponentDefinition<P>)._isComponent = true
 	return factory as ComponentDefinition<P>
-}
-
-export function watchEffect(
-	componentEl: HTMLElement,
-	fn: () => void
-): void {
-	const dispose = effect(fn)
-	const existing = effectCleanups.get(componentEl) ?? []
-	existing.push(dispose)
-	effectCleanups.set(componentEl, existing)
 }
