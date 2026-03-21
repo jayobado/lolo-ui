@@ -1,6 +1,6 @@
-# ts-ui
+# ts-ui-tools
 
-A full-stack SPA framework for building dashboards and data-heavy UIs in pure TypeScript. No build step. No JSX. No virtual DOM. Runs natively in Deno and the browser as ES modules.
+A full-stack SPA framework toolkit for building dashboards and data-heavy UIs in pure TypeScript. No build step. No JSX. No virtual DOM. Runs natively in Deno and the browser as ES modules.
 
 ## What it provides
 
