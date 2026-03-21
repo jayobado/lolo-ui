@@ -45,7 +45,7 @@ export DENO_AUTH_TOKENS="ghp_yourtoken@raw.githubusercontent.com"
 <script type="importmap">
 {
   "imports": {
-    "@ts-ui": "https://raw.githubusercontent.com/yourname/ts-ui/v0.1.0/mod.ts"
+    "@ts-ui-tools": "https://raw.githubusercontent.com/jayobado/ts-ui-tools/v0.1.0/mod.ts"
   }
 }
 </script>
@@ -62,7 +62,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   resolve: {
     alias: {
-      '@ts-ui': '/path/to/ts-ui/mod.ts',
+      '@ts-ui-tools': '/path/to/ts-ui-tools/mod.ts',
     },
   },
 })
@@ -82,18 +82,18 @@ await build({
   bundle:      true,
   outfile:     'dist/app.js',
   alias: {
-    '@ts-ui': './path/to/ts-ui/mod.ts',
+    '@ts-ui-tools': './path/to/ts-ui-tools/mod.ts',
   },
 })
 ```
 
 ### Node (18+)
 
-`ts-ui` uses browser APIs (`document`, `HTMLElement`, `EventSource`) so it needs a DOM environment on Node. Use with [happy-dom](https://github.com/capricorn86/happy-dom) or [jsdom](https://github.com/jsdom/jsdom) for testing, or just bundle it for the browser with Vite or esbuild — the Node process only needs to run the build, not the UI itself.
+`ts-ui-tools` uses browser APIs (`document`, `HTMLElement`, `EventSource`) so it needs a DOM environment on Node. Use with [happy-dom](https://github.com/capricorn86/happy-dom) or [jsdom](https://github.com/jsdom/jsdom) for testing, or just bundle it for the browser with Vite or esbuild — the Node process only needs to run the build, not the UI itself.
 ```bash
-npm install ts-ui   # if published to npm
+npm install ts-ui-tools   # if published to npm
 # or
-npm install ./path/to/ts-ui
+npm install ./path/to/ts-ui-tools
 ```
 ```typescript
 import { signal, defineComponent } from 'ts-ui'
@@ -133,7 +133,7 @@ import {
   signal,
   div, h1, button, span,
   css,
-} from '@ts-ui'
+} from '@ts-ui-tools'
 
 const Counter = defineComponent((_props, { effect }) => {
   const count   = signal(0)
