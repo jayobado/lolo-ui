@@ -1,4 +1,4 @@
-# ts-ui-tools
+# ts-ui-tools-tools
 
 An SPA framework toolkit for building dashboards and data-heavy UIs in pure TypeScript. No build step. No JSX. No virtual DOM. Runs natively in Deno and the browser as ES modules.
 
@@ -20,7 +20,7 @@ An SPA framework toolkit for building dashboards and data-heavy UIs in pure Type
 ## Requirements
 
 - Deno 1.40+ or a modern browser with ES module support
-- A server to serve your TypeScript files (see [ts-hono](https://github.com/yourname/ts-hono))
+- A server to serve your TypeScript files (see [ts-hono-deno](https://github.com/jayobado/ts-hono-deno))
 
 ## Installation
 
@@ -30,7 +30,7 @@ Add to your project's `deno.json`:
 ```json
 {
   "imports": {
-    "@ts-ui": "https://raw.githubusercontent.com/yourname/ts-ui/v0.1.0/mod.ts"
+    "@ts-ui-tools": "https://raw.githubusercontent.com/jayobado/ts-ui-tools/v0.1.0/mod.ts"
   }
 }
 ```
@@ -45,14 +45,14 @@ export DENO_AUTH_TOKENS="ghp_yourtoken@raw.githubusercontent.com"
 <script type="importmap">
 {
   "imports": {
-    "@ts-ui-tools": "https://raw.githubusercontent.com/jayobado/ts-ui-tools/v0.1.0/mod.ts"
+    "@ts-ui-tools-tools": "https://raw.githubusercontent.com/jayobado/ts-ui-tools-tools/v0.1.0/mod.ts"
   }
 }
 </script>
 <script type="module" src="/main.ts"></script>
 ```
 
-> Requires a server that transpiles `.ts` files — see [ts-hono](https://github.com/yourname/ts-hono).
+> Requires a server that transpiles `.ts` files — see [ts-hono-deno](https://github.com/jayobado/ts-hono-deno).
 
 ### Vite
 ```typescript
@@ -62,14 +62,14 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   resolve: {
     alias: {
-      '@ts-ui-tools': '/path/to/ts-ui-tools/mod.ts',
+      '@ts-ui-tools-tools': '/path/to/ts-ui-tools-tools/mod.ts',
     },
   },
 })
 ```
 ```typescript
 // main.ts
-import { signal, defineComponent, createApp } from '@ts-ui'
+import { signal, defineComponent, createApp } from '@ts-ui-tools'
 ```
 
 ### esbuild
@@ -82,29 +82,29 @@ await build({
   bundle:      true,
   outfile:     'dist/app.js',
   alias: {
-    '@ts-ui-tools': './path/to/ts-ui-tools/mod.ts',
+    '@ts-ui-tools-tools': './path/to/ts-ui-tools-tools/mod.ts',
   },
 })
 ```
 
 ### Node (18+)
 
-`ts-ui-tools` uses browser APIs (`document`, `HTMLElement`, `EventSource`) so it needs a DOM environment on Node. Use with [happy-dom](https://github.com/capricorn86/happy-dom) or [jsdom](https://github.com/jsdom/jsdom) for testing, or just bundle it for the browser with Vite or esbuild — the Node process only needs to run the build, not the UI itself.
+`ts-ui-tools-tools` uses browser APIs (`document`, `HTMLElement`, `EventSource`) so it needs a DOM environment on Node. Use with [happy-dom](https://github.com/capricorn86/happy-dom) or [jsdom](https://github.com/jsdom/jsdom) for testing, or just bundle it for the browser with Vite or esbuild — the Node process only needs to run the build, not the UI itself.
 ```bash
-npm install ts-ui-tools   # if published to npm
+npm install ts-ui-tools-tools   # if published to npm
 # or
-npm install ./path/to/ts-ui-tools
+npm install ./path/to/ts-ui-tools-tools
 ```
 ```typescript
-import { signal, defineComponent } from 'ts-ui'
+import { signal, defineComponent } from 'ts-ui-tools'
 ```
 
 ### Bun
 ```bash
-bun add ./path/to/ts-ui
+bun add ./path/to/ts-ui-tools
 ```
 ```typescript
-import { signal, defineComponent } from 'ts-ui'
+import { signal, defineComponent } from 'ts-ui-tools'
 ```
 
 ---
@@ -120,7 +120,7 @@ import { signal, defineComponent } from 'ts-ui'
 | Bun | ✓ | No DOM — bundle for browser |
 | Node 18+ | ✓ | No DOM — bundle for browser |
 
-> `ts-ui` has zero external dependencies. It is pure TypeScript using only browser APIs. It runs anywhere those APIs are available.
+> `ts-ui-tools` has zero external dependencies. It is pure TypeScript using only browser APIs. It runs anywhere those APIs are available.
 
 ---
 
@@ -133,7 +133,7 @@ import {
   signal,
   div, h1, button, span,
   css,
-} from '@ts-ui-tools'
+} from '@ts-ui-tools-tools'
 
 const Counter = defineComponent((_props, { effect }) => {
   const count   = signal(0)
@@ -178,7 +178,7 @@ createApp({
 
 Signals are the reactive core. Any `effect` that reads a signal is automatically re-run when the signal changes.
 ```typescript
-import { signal, computed, effect, batch } from '@ts-ui'
+import { signal, computed, effect, batch } from '@ts-ui-tools'
 
 // ── signal ────────────────────────────────────────────────────────────────────
 
@@ -222,7 +222,7 @@ import {
   form, label, input, button, select, option, textarea, fieldset,
   img, a, hr, br,
   table, thead, tbody, tr, th, td,
-} from '@ts-ui'
+} from '@ts-ui-tools'
 
 // No props
 div(null, 'Hello')
@@ -290,7 +290,7 @@ All element factories extend `ElementProps`:
 
 Every component receives typed props and a `ComponentContext`. The setup function runs once and returns the root DOM element.
 ```typescript
-import { defineComponent, signal, div, span, button } from '@ts-ui'
+import { defineComponent, signal, div, span, button } from '@ts-ui-tools'
 
 const UserCard = defineComponent<{ name: string; role: string }>(
   (props, { onMount, onUnmount, effect }) => {
@@ -337,7 +337,7 @@ document.body.appendChild(card)
 
 ### `h()` — mount a component
 ```typescript
-import { h } from '@ts-ui'
+import { h } from '@ts-ui-tools'
 
 // Typed props from component definition
 const el = h(UserCard, { name: 'Jane', role: 'Admin' })
@@ -349,7 +349,7 @@ The CSS engine generates atomic class names from style objects and injects rules
 
 ### `css()` — reactive styles
 ```typescript
-import { css } from '@ts-ui'
+import { css } from '@ts-ui-tools'
 
 const className = css({
   display:      'flex',
@@ -406,7 +406,7 @@ css({
 
 ## Router
 ```typescript
-import { createApp } from '@ts-ui'
+import { createApp } from '@ts-ui-tools'
 
 // Auth guard — return true to proceed, string to redirect
 const requiresAuth = async () => {
@@ -477,7 +477,7 @@ Define your service contract once. Swap the transport without touching your view
 ### Defining services
 ```typescript
 // services/app.ts
-import { Services } from '@ts-ui'
+import { Services } from '@ts-ui-tools'
 
 const { defineServices, query, mutation, subscription } = Services
 
@@ -516,7 +516,7 @@ export type AppServices = typeof appServices
 ### Configuring an adapter
 ```typescript
 // main.ts
-import { configureServices, Adapters } from '@ts-ui'
+import { configureServices, Adapters } from '@ts-ui-tools'
 import { appServices }                  from './services/app.ts'
 
 configureServices(
@@ -528,8 +528,8 @@ configureServices(
 
 ### Using services in a view
 ```typescript
-import { defineComponent, signal, div } from '@ts-ui'
-import { useServices }                   from '@ts-ui'
+import { defineComponent, signal, div } from '@ts-ui-tools'
+import { useServices }                   from '@ts-ui-tools'
 import type { AppServices, User }        from './services/app.ts'
 
 const UsersView = defineComponent((_props, { onMount, effect }) => {
@@ -574,9 +574,9 @@ const UsersView = defineComponent((_props, { onMount, effect }) => {
 
 ### Available adapters
 ```typescript
-import { Adapters } from '@ts-ui'
+import { Adapters } from '@ts-ui-tools'
 
-// tRPC — works with ts-hono server-side tRPC bridge
+// tRPC — works with ts-hono-deno server-side tRPC bridge
 Adapters.createTrpcAdapter(services, { baseUrl: '/api' })
 
 // REST
@@ -600,7 +600,7 @@ Adapters.createConnectAdapter(services, {
 
 ### Custom adapter
 ```typescript
-import type { Transport } from '@ts-ui'
+import type { Transport } from '@ts-ui-tools'
 
 const myTransport: Transport = {
   query:     (path, input) => myClient.get(path, input),
@@ -627,12 +627,12 @@ my-app/
             └── DashboardView.ts
 ```
 
-## Working with ts-hono
+## Working with ts-hono-deno
 
-`ts-ui` is designed to be served by [ts-hono](https://github.com/yourname/ts-hono) which handles TypeScript transpilation, static file serving, and tRPC integration.
+`ts-ui-tools` is designed to be served by [ts-hono-deno](https://github.com/jayobado/ts-hono-deno) which handles TypeScript transpilation, static file serving, and tRPC integration.
 ```typescript
 // server.ts
-import { ui } from '@ts-hono'
+import { ui } from '@ts-hono-deno'
 
 await ui({
   host:      'localhost',
