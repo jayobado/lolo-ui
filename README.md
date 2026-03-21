@@ -24,6 +24,8 @@ A full-stack SPA framework for building dashboards and data-heavy UIs in pure Ty
 
 ## Installation
 
+### Deno
+
 Add to your project's `deno.json`:
 ```json
 {
@@ -37,6 +39,90 @@ Set your GitHub token for private repo access:
 ```bash
 export DENO_AUTH_TOKENS="ghp_yourtoken@raw.githubusercontent.com"
 ```
+
+### Browser (import map, no bundler)
+```html
+<script type="importmap">
+{
+  "imports": {
+    "@ts-ui": "https://raw.githubusercontent.com/yourname/ts-ui/v0.1.0/mod.ts"
+  }
+}
+</script>
+<script type="module" src="/main.ts"></script>
+```
+
+> Requires a server that transpiles `.ts` files — see [ts-hono](https://github.com/yourname/ts-hono).
+
+### Vite
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@ts-ui': '/path/to/ts-ui/mod.ts',
+    },
+  },
+})
+```
+```typescript
+// main.ts
+import { signal, defineComponent, createApp } from '@ts-ui'
+```
+
+### esbuild
+```typescript
+// build.ts
+import { build } from 'esbuild'
+
+await build({
+  entryPoints: ['src/main.ts'],
+  bundle:      true,
+  outfile:     'dist/app.js',
+  alias: {
+    '@ts-ui': './path/to/ts-ui/mod.ts',
+  },
+})
+```
+
+### Node (18+)
+
+`ts-ui` uses browser APIs (`document`, `HTMLElement`, `EventSource`) so it needs a DOM environment on Node. Use with [happy-dom](https://github.com/capricorn86/happy-dom) or [jsdom](https://github.com/jsdom/jsdom) for testing, or just bundle it for the browser with Vite or esbuild — the Node process only needs to run the build, not the UI itself.
+```bash
+npm install ts-ui   # if published to npm
+# or
+npm install ./path/to/ts-ui
+```
+```typescript
+import { signal, defineComponent } from 'ts-ui'
+```
+
+### Bun
+```bash
+bun add ./path/to/ts-ui
+```
+```typescript
+import { signal, defineComponent } from 'ts-ui'
+```
+
+---
+
+## Compatibility
+
+| Environment | Supported | Notes |
+|---|---|---|
+| Deno | ✓ | Native — recommended |
+| Modern browsers | ✓ | Via import map or bundler |
+| Vite | ✓ | Use path alias |
+| esbuild | ✓ | Use alias option |
+| Bun | ✓ | No DOM — bundle for browser |
+| Node 18+ | ✓ | No DOM — bundle for browser |
+
+> `ts-ui` has zero external dependencies. It is pure TypeScript using only browser APIs. It runs anywhere those APIs are available.
+
+---
 
 ## Quick start
 ```typescript
@@ -311,10 +397,10 @@ Numbers are automatically converted to `px` except for unitless properties:
 css({
   padding:      16,    // → padding: 16px
   borderRadius: 8,     // → border-radius: 8px
-  opacity:      0.5,   // → opacity: 0.5  (unitless, no px)
-  zIndex:       10,    // → z-index: 10   (unitless, no px)
-  fontWeight:   700,   // → font-weight: 700 (unitless, no px)
-  lineHeight:   1.5,   // → line-height: 1.5 (unitless, no px)
+  opacity:      0.5,   // → opacity: 0.5  (no px)
+  zIndex:       10,    // → z-index: 10   (no px)
+  fontWeight:   700,   // → font-weight: 700 (no px)
+  lineHeight:   1.5,   // → line-height: 1.5 (no px)
 })
 ```
 
@@ -332,14 +418,13 @@ createApp({
 
   routes: [
     // Public
-    { path: '/',       view: (ctx) => HomeView(ctx)  },
-    { path: '/login',  view: (ctx) => LoginView(ctx) },
+    { path: '/',      view: (ctx) => HomeView(ctx)  },
+    { path: '/login', view: (ctx) => LoginView(ctx) },
 
     // Named params — available via ctx.params.id
     { path: '/users/:id', view: (ctx) => UserView(ctx) },
 
     // Query strings — available via ctx.query.tab
-    // /settings?tab=security → ctx.query.tab === 'security'
     { path: '/settings', view: (ctx) => SettingsView(ctx) },
 
     // With auth guard
@@ -349,7 +434,7 @@ createApp({
       guards: [requiresAuth],
     },
 
-    // Nested layout — layout wraps view content
+    // Nested layout
     {
       path:   '/dashboard/users',
       layout: (content, ctx) => DashboardLayout({ content, ctx }),
@@ -361,15 +446,12 @@ createApp({
   fallback: (ctx) => NotFoundView(ctx),
 
   onInit: async () => {
-    // Runs once before the first route renders
-    // Good place to restore auth state
+    // Runs once before first route renders
   },
 }).init()
 ```
 
 ### Route context
-
-Every view and layout receives a `RouteContext`:
 ```typescript
 interface RouteContext {
   params: Record<string, string>  // /users/:id → { id: '123' }
@@ -380,8 +462,6 @@ interface RouteContext {
 
 ### Navigation
 ```typescript
-import { createApp } from '@ts-ui'
-
 const { navigateTo, back, forward } = await createApp({ ... }).init()
 
 navigateTo('/dashboard')
@@ -389,10 +469,6 @@ navigateTo('/users/123')
 back()
 forward()
 ```
-
-### Link interception
-
-`interceptLinks()` is called automatically by `createApp`. Any `<a href="/path">` click is intercepted and handled by the router without a full page reload.
 
 ## Services
 
@@ -444,7 +520,6 @@ import { configureServices, Adapters } from '@ts-ui'
 import { appServices }                  from './services/app.ts'
 
 configureServices(
-  // tRPC bridge — works with ts-hono's tRPC integration
   Adapters.createTrpcAdapter(appServices, {
     baseUrl: '/api',
   })
@@ -453,9 +528,9 @@ configureServices(
 
 ### Using services in a view
 ```typescript
-import { defineComponent, signal, div, span } from '@ts-ui'
-import { useServices }                         from '@ts-ui'
-import type { AppServices, User }              from './services/app.ts'
+import { defineComponent, signal, div } from '@ts-ui'
+import { useServices }                   from '@ts-ui'
+import type { AppServices, User }        from './services/app.ts'
 
 const UsersView = defineComponent((_props, { onMount, effect }) => {
   const users   = signal<User[]>([])
@@ -482,12 +557,10 @@ const UsersView = defineComponent((_props, { onMount, effect }) => {
       container.textContent = 'Loading...'
       return
     }
-
     if (error.get()) {
       container.textContent = error.get()!
       return
     }
-
     container.replaceChildren(
       ...users.get().map(u =>
         div({ styles: { padding: '8px 0' } }, u.name)
@@ -504,13 +577,11 @@ const UsersView = defineComponent((_props, { onMount, effect }) => {
 import { Adapters } from '@ts-ui'
 
 // tRPC — works with ts-hono server-side tRPC bridge
-Adapters.createTrpcAdapter(services, {
-  baseUrl: '/api',
-})
+Adapters.createTrpcAdapter(services, { baseUrl: '/api' })
 
 // REST
 Adapters.createRestAdapter(services, {
-  baseUrl:   'https://api.example.com',
+  baseUrl:    'https://api.example.com',
   getHeaders: () => ({
     Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`
   }),
@@ -528,8 +599,6 @@ Adapters.createConnectAdapter(services, {
 ```
 
 ### Custom adapter
-
-Implement the `Transport` interface to support any backend:
 ```typescript
 import type { Transport } from '@ts-ui'
 
@@ -543,13 +612,13 @@ const myTransport: Transport = {
 ## Project structure
 ```
 my-app/
-├── server.ts              # ts-hono ui() server
+├── server.ts
 ├── deno.json
 └── public/
-    ├── main.ts            # createApp entry point
-    ├── tokens.ts          # design tokens
+    ├── main.ts
+    ├── tokens.ts
     ├── services/
-    │   └── app.ts         # service definitions
+    │   └── app.ts
     └── views/
         ├── HomeView.ts
         ├── LoginView.ts
@@ -573,13 +642,9 @@ await ui({
   strategy:  'lazy',
 })
 ```
-```bash
-deno run --watch --allow-all server.ts
-```
 
 ## Versioning
 ```bash
-# Bump ts-ui to a new release in your project
 deno run --allow-read --allow-write scripts/bump.ts v0.2.0
 ```
 
