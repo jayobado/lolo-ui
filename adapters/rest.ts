@@ -14,8 +14,8 @@ export interface RestAdapterOptions {
 export class RestError extends Error {
 	constructor(
 		public status: number,
-		public message: string,
-		public body: unknown
+		public body: unknown,
+		message: string
 	) {
 		super(message)
 		this.name = 'RestError'
