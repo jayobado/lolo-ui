@@ -21,10 +21,10 @@ export interface ParseReturn<TSchema extends StandardSchemaV1, TErrors> {
 
 // ─── Implementation ──────────────────────────────────────────────────────────
 
-export function useParse<TSchema extends StandardSchemaV1, TErrors = StandardErrors> (
+export function useParse<TSchema extends StandardSchemaV1, TErrors = StandardErrors>(
 	options: ParseOptions<TSchema, TErrors>,
-	scope ?: Scope,
-): ParseReturn < TSchema, TErrors > {
+	scope?: Scope,
+): ParseReturn<TSchema, TErrors> {
 	type Output = StandardSchemaV1.InferOutput<TSchema>
 
 	const s = resolveScope(scope)
@@ -37,31 +37,31 @@ export function useParse<TSchema extends StandardSchemaV1, TErrors = StandardErr
 	let generation = 0
 
 	function apply(result: StandardSchemaV1.Result<Output>): void {
-		if(result.issues) {
-	output.set(undefined)
-	errors.set(formatErrors(result.issues))
-} else {
-	output.set(result.value)
-	errors.set(undefined)
-}
+		if (result.issues) {
+			output.set(undefined)
+			errors.set(formatErrors(result.issues))
+		} else {
+			output.set(result.value)
+			errors.set(undefined)
+		}
 	}
 
-const dispose = effect(() => {
-	const schema = options.schema()
-	const input = options.input?.()
-	const current = ++generation
-	const resultOrPromise = schema['~standard'].validate(input)
+	const dispose = effect(() => {
+		const schema = options.schema()
+		const input = options.input?.()
+		const current = ++generation
+		const resultOrPromise = schema['~standard'].validate(input)
 
-	if (resultOrPromise instanceof Promise) {
-		resultOrPromise.then(r => {
-			if (current === generation) apply(r)
-		})
-	} else {
-		apply(resultOrPromise)
-	}
-})
+		if (resultOrPromise instanceof Promise) {
+			resultOrPromise.then(r => {
+				if (current === generation) apply(r)
+			})
+		} else {
+			apply(resultOrPromise)
+		}
+	})
 
-s?.onCleanup(dispose)
+	s?.onCleanup(dispose)
 
-return { output, errors, dispose }
+	return { output, errors, dispose }
 }

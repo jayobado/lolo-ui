@@ -1,4 +1,4 @@
-import { signal } from '../signals.ts'
+import { signal, effect } from '../signals.ts'
 import { resolveScope } from '../scope.ts'
 import type { Scope } from '../scope.ts'
 
@@ -32,10 +32,13 @@ export function useLocalStorage<T>(
 
 	const stored = signal<T>(read())
 
-	const originalSet = stored.set
-	stored.set = (v: T) => {
-		originalSet(v)
-		write(v)
+	// Wrap set to persist without mutating the original signal
+	const value = {
+		get: stored.get,
+		set: (v: T) => {
+			stored.set(v)
+			write(v)
+		},
 	}
 
 	function onStorage(e: StorageEvent): void {
@@ -47,7 +50,7 @@ export function useLocalStorage<T>(
 
 	function remove(): void {
 		localStorage.removeItem(key)
-		originalSet(initialValue)
+		stored.set(initialValue)
 	}
 
 	const dispose = () => {
@@ -55,5 +58,5 @@ export function useLocalStorage<T>(
 	}
 
 	s?.onCleanup(dispose)
-	return { value: stored, remove, dispose }
+	return { value, remove, dispose }
 }

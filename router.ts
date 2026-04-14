@@ -40,6 +40,7 @@ export interface RouterOptions {
 	routes: RouteDefinition[]
 	onError?: (err: unknown) => void
 	fallback?: (context: RouteContext) => HTMLElement
+	scrollToTop?: boolean
 }
 
 export interface Router {
@@ -63,7 +64,7 @@ export function navigateTo(path: string): void {
 // ─── createRouter ─────────────────────────────────────────────────────────────
 
 export function createRouter(options: RouterOptions): Router {
-	const { outlet, routes, onError, fallback } = options
+	const { outlet, routes, onError, fallback, scrollToTop = true } = options
 
 	const compiled = routes.map(route => ({
 		route,
@@ -142,6 +143,8 @@ export function createRouter(options: RouterOptions): Router {
 					? matched.route.title(context)
 					: matched.route.title
 			}
+
+			if (scrollToTop) globalThis.scrollTo(0, 0)
 
 		} catch (err) {
 			onError ? onError(err) : console.error('[router]', err)

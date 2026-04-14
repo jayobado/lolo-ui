@@ -189,17 +189,15 @@ export function css(styles: StyleObject): string {
 		for (const [query, props] of Object.entries(media)) {
 			for (const [prop, value] of Object.entries(props)) {
 				if (value == null) continue
-				classes.push(
-					registerProperty(prop, value as CSSValue, cls => `@media ${query}{.${cls}`, `m:${query}`)
-				)
-				const lastCls = classes[classes.length - 1]
-				const sheet = getSheet()
-				const rules = Array.from(sheet.cssRules)
-				const last = rules.find(r => r.cssText.includes(`.${lastCls}`))
-				if (last && !last.cssText.endsWith('}}')) {
-					sheet.deleteRule(rules.indexOf(last))
-					sheet.insertRule(last.cssText + '}', sheet.cssRules.length)
+				const key = `m:${query}:${prop}:${value}`
+				if (!ruleCache.has(key)) {
+					const cls = genClass()
+					const decl = `${kebab(prop)}:${toValue(prop, value)}`
+					const rule = `@media ${query}{.${cls}{${decl}}}`
+					ruleCache.set(key, cls)
+					injectRule(cls, rule)
 				}
+				classes.push(ruleCache.get(key)!)
 			}
 		}
 	}

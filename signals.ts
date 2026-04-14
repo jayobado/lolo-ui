@@ -4,6 +4,9 @@ let currentEffect: Effect | null = null
 let batching = false
 const pendingEffects = new Set<Effect>()
 
+// Track which signals each effect is subscribed to
+const effectSubscriptions = new WeakMap<Effect, Set<Set<Effect>>>()
+
 export interface Signal<T> {
 	get: () => T
 	set: (value: T) => void
@@ -15,7 +18,15 @@ export function signal<T>(initialValue: T): Signal<T> {
 	const subscribers = new Set<Effect>()
 
 	const get = (): T => {
-		if (currentEffect) subscribers.add(currentEffect)
+		if (currentEffect) {
+			subscribers.add(currentEffect)
+			let subs = effectSubscriptions.get(currentEffect)
+			if (!subs) {
+				subs = new Set()
+				effectSubscriptions.set(currentEffect, subs)
+			}
+			subs.add(subscribers)
+		}
 		return value
 	}
 
@@ -37,6 +48,13 @@ export function signal<T>(initialValue: T): Signal<T> {
 
 export function effect(fn: Effect): () => void {
 	const execute = () => {
+		// Clean previous subscriptions before re-running
+		const prevSubs = effectSubscriptions.get(execute)
+		if (prevSubs) {
+			prevSubs.forEach(subscriberSet => subscriberSet.delete(execute))
+			prevSubs.clear()
+		}
+
 		currentEffect = execute
 		try {
 			fn()
@@ -45,7 +63,15 @@ export function effect(fn: Effect): () => void {
 		}
 	}
 	execute()
-	return () => { currentEffect = null }
+
+	return () => {
+		const subs = effectSubscriptions.get(execute)
+		if (subs) {
+			subs.forEach(subscriberSet => subscriberSet.delete(execute))
+			subs.clear()
+		}
+		effectSubscriptions.delete(execute)
+	}
 }
 
 export function computed<T>(fn: () => T): { get: () => T } {
