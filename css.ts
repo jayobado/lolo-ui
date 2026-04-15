@@ -204,3 +204,20 @@ export function css(styles: StyleObject): string {
 
 	return classes.join(' ')
 }
+
+export function style(rules: Record<string, StyleProperties | Record<string, CSSValue>>): void {
+	const sheet = getSheet()
+	for (const [selector, props] of Object.entries(rules)) {
+		const declarations = Object.entries(props)
+			.filter(([_, v]) => v != null)
+			.map(([prop, value]) => {
+				if (prop.startsWith('--')) return `${prop}:${value}`
+				return `${kebab(prop)}:${toValue(prop, value as CSSValue)}`
+			})
+			.join(';')
+		if (!declarations) continue
+		try {
+			sheet.insertRule(`${selector}{${declarations}}`, sheet.cssRules.length)
+		} catch { /* skip invalid */ }
+	}
+}
