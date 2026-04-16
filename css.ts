@@ -205,8 +205,35 @@ export function css(styles: StyleObject): string {
 	return classes.join(' ')
 }
 
-export function style(rules: Record<string, StyleProperties | Record<string, CSSValue>>): void {
+export interface FontFace {
+	family: string
+	src: string
+	weight?: CSSValue
+	style?: string
+	display?: string
+}
+
+export function globalStyles(
+	rules: Record<string, StyleProperties | Record<string, CSSValue>>,
+	fonts?: FontFace[],
+): void {
 	const sheet = getSheet()
+
+	if (fonts) {
+		for (const font of fonts) {
+			const declarations = [
+				`font-family:${font.family}`,
+				`src:${font.src}`,
+				font.weight != null ? `font-weight:${font.weight}` : '',
+				font.style ? `font-style:${font.style}` : '',
+				`font-display:${font.display ?? 'swap'}`,
+			].filter(Boolean).join(';')
+			try {
+				sheet.insertRule(`@font-face{${declarations}}`, sheet.cssRules.length)
+			} catch { /* skip invalid */ }
+		}
+	}
+
 	for (const [selector, props] of Object.entries(rules)) {
 		const declarations = Object.entries(props)
 			.filter(([_, v]) => v != null)

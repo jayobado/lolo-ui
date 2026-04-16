@@ -6,7 +6,7 @@ An SPA framework toolkit for building dashboards and data-heavy UIs in pure Type
 
 - **Signals** — fine-grained reactive primitives (`signal`, `computed`, `effect`, `batch`)
 - **DOM** — typed element factories that build real DOM nodes directly (`div`, `span`, `button`, `input` etc.)
-- **CSS** — atomic CSS-in-JS engine with pseudo-class and media query support
+- **CSS** — atomic CSS-in-JS engine with pseudo-class, media query, and global styles support
 - **Components** — `defineComponent` with scoped lifecycle and auto-disposed effects
 - **Scopes** — composable lifecycle containers for hooks — work inside and outside components
 - **Router** — client-side routing with params, guards, nested layouts, query strings
@@ -30,35 +30,25 @@ An SPA framework toolkit for building dashboards and data-heavy UIs in pure Type
 
 ## Installation
 
-### Deno
+### Deno + kiln (recommended)
+```sh
+deno add jsr:@jayobado/lolo-ui
+```
 
-Add to your project's `deno.json`:
+Or in `deno.json`:
 ```json
 {
   "imports": {
-    "@lolo-ui": "https://raw.githubusercontent.com/jayobado/lolo-ui/v0.1.0/mod.ts"
+    "@jayobado/lolo-ui": "jsr:@jayobado/lolo-ui@^0.1.9",
+    "@jayobado/lolo-ui/form": "jsr:@jayobado/lolo-ui@^0.1.9/form",
+    "@jayobado/lolo-ui/query": "jsr:@jayobado/lolo-ui@^0.1.9/query",
+    "@jayobado/lolo-ui/components": "jsr:@jayobado/lolo-ui@^0.1.9/components",
+    "@jayobado/lolo-ui/primitives": "jsr:@jayobado/lolo-ui@^0.1.9/primitives"
   }
 }
 ```
 
-Set your GitHub token for private repo access:
-```bash
-export DENO_AUTH_TOKENS="ghp_yourtoken@raw.githubusercontent.com"
-```
-
-### Browser (import map, no bundler)
-```html
-<script type="importmap">
-{
-  "imports": {
-    "@lolo-ui": "https://raw.githubusercontent.com/jayobado/lolo-ui/v0.1.0/mod.ts"
-  }
-}
-</script>
-<script type="module" src="/main.ts"></script>
-```
-
-> Requires a server that transpiles `.ts` files — see [kiln](https://github.com/jayobado/kiln).
+[kiln](https://github.com/jayobado/kiln) (v0.1.8+) handles transpilation and import rewriting automatically.
 
 ### Vite
 ```typescript
@@ -68,14 +58,10 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   resolve: {
     alias: {
-      '@lolo-ui': '/path/to/lolo-ui/mod.ts',
+      '@jayobado/lolo-ui': 'jsr:@jayobado/lolo-ui',
     },
   },
 })
-```
-```typescript
-// main.ts
-import { signal, defineComponent, createApp } from '@lolo-ui'
 ```
 
 ### esbuild
@@ -88,45 +74,22 @@ await build({
   bundle:      true,
   outfile:     'dist/app.js',
   alias: {
-    '@lolo-ui': './path/to/lolo-ui/mod.ts',
+    '@jayobado/lolo-ui': './path/to/lolo-ui/mod.ts',
   },
 })
 ```
-
-### Node (18+)
-
-`lolo-ui` uses browser APIs (`document`, `HTMLElement`, `EventSource`) so it needs a DOM environment on Node. Use with [happy-dom](https://github.com/capricorn86/happy-dom) or [jsdom](https://github.com/jsdom/jsdom) for testing, or just bundle it for the browser with Vite or esbuild — the Node process only needs to run the build, not the UI itself.
-```bash
-npm install lolo-ui   # if published to npm
-# or
-npm install ./path/to/lolo-ui
-```
-```typescript
-import { signal, defineComponent } from 'lolo-ui'
-```
-
-### Bun
-```bash
-bun add ./path/to/lolo-ui
-```
-```typescript
-import { signal, defineComponent } from 'lolo-ui'
-```
-
----
 
 ## Compatibility
 
 | Environment | Supported | Notes |
 |---|---|---|
-| Deno | ✓ | Native — recommended |
-| Modern browsers | ✓ | Via import map or bundler |
-| Vite | ✓ | Use path alias |
+| Deno + kiln | ✓ | Recommended — handles transpilation and import rewriting |
+| Deno Deploy | ✓ | Via kiln eager strategy |
+| Vite | ✓ | Use resolve alias |
 | esbuild | ✓ | Use alias option |
-| Bun | ✓ | No DOM — bundle for browser |
-| Node 18+ | ✓ | No DOM — bundle for browser |
+| Any ES module server | ✓ | Serves `.ts` as JS with import resolution |
 
-> `lolo-ui` has zero external dependencies. It is pure TypeScript using only browser APIs. It runs anywhere those APIs are available.
+> `lolo-ui` has one dependency (`@standard-schema/spec` for form validation types). It is pure TypeScript using only browser APIs.
 
 ---
 
@@ -139,7 +102,7 @@ import {
   signal,
   div, h1, button, span,
   css,
-} from '@lolo-ui'
+} from '@jayobado/lolo-ui'
 
 const Counter = defineComponent((_props, { effect }) => {
   const count   = signal(0)
@@ -184,7 +147,7 @@ createApp({
 
 Signals are the reactive core. Any `effect` that reads a signal is automatically re-run when the signal changes.
 ```typescript
-import { signal, computed, effect, batch } from '@lolo-ui'
+import { signal, computed, effect, batch } from '@jayobado/lolo-ui'
 
 // ── signal ────────────────────────────────────────────────────────────────────
 
@@ -228,7 +191,7 @@ import {
   form, label, input, button, select, option, textarea, fieldset,
   img, a, hr, br,
   table, thead, tbody, tr, th, td,
-} from '@lolo-ui'
+} from '@jayobado/lolo-ui'
 
 // No props
 div(null, 'Hello')
@@ -296,7 +259,7 @@ All element factories extend `ElementProps`:
 
 Every component receives typed props and a `ComponentContext`. The setup function runs once and returns the root DOM element.
 ```typescript
-import { defineComponent, signal, div, span, button } from '@lolo-ui'
+import { defineComponent, signal, div, span, button } from '@jayobado/lolo-ui'
 
 const UserCard = defineComponent<{ name: string; role: string }>(
   (props, { onMount, onUnmount, effect }) => {
@@ -343,7 +306,7 @@ const UserCard = defineComponent<{ name: string; role: string }>(
 
 ### `h()` — mount a component
 ```typescript
-import { h } from '@lolo-ui'
+import { h } from '@jayobado/lolo-ui'
 
 // Typed props from component definition
 const el = h(UserCard, { name: 'Jane', role: 'Admin' })
@@ -355,7 +318,7 @@ The CSS engine generates atomic class names from style objects and injects rules
 
 ### `css()` — reactive styles
 ```typescript
-import { css } from '@lolo-ui'
+import { css } from '@jayobado/lolo-ui'
 
 const className = css({
   display:      'flex',
@@ -410,6 +373,56 @@ css({
 })
 ```
 
+### `globalStyles()` — global rules and CSS variables
+
+For element selectors, resets, and CSS custom properties that don't belong in a scoped class:
+```typescript
+import { globalStyles } from '@jayobado/lolo-ui'
+
+globalStyles({
+  ':root': {
+    '--color-primary': '#2356d7',
+    '--color-danger': '#d61f47',
+    '--color-text': '#212529',
+    '--color-bg': '#fff',
+    '--color-border': '#dfe3ea',
+    '--radius': '0.375rem',
+    '--font-sans': '"Inter", system-ui, sans-serif',
+  },
+  '*, *::before, *::after': {
+    boxSizing: 'border-box',
+  },
+  'body': {
+    margin: 0,
+    fontFamily: 'var(--font-sans)',
+    fontSize: '16px',
+    lineHeight: 1.5,
+    color: 'var(--color-text)',
+    background: 'var(--color-bg)',
+  },
+  'a': {
+    color: 'var(--color-primary)',
+    textDecoration: 'none',
+  },
+})
+```
+
+Keys starting with `--` are passed through as CSS custom properties. Everything else uses the same camelCase-to-kebab conversion and auto `px` as `css()`. Rules are injected into the same shared `<style>` element.
+
+### Fonts
+
+Pass font faces as the second argument to `globalStyles()`:
+```typescript
+globalStyles({
+  'body': { fontFamily: '"Inter", system-ui, sans-serif' },
+}, [
+  { family: '"Inter"', src: 'url(/fonts/Inter-Regular.woff2) format("woff2")', weight: 400 },
+  { family: '"Inter"', src: 'url(/fonts/Inter-Medium.woff2) format("woff2")', weight: 500 },
+])
+```
+
+Place font files in your static directory (e.g. `client/fonts/`). Each entry generates an `@font-face` rule with `font-display: swap` by default.
+
 ## Scopes
 
 Scopes track effects and cleanup functions, disposing them all at once. Inside `defineComponent`, a scope is created automatically — hooks called during setup bind to it. Outside a component, you create a scope manually.
@@ -417,7 +430,7 @@ Scopes track effects and cleanup functions, disposing them all at once. Inside `
 ### `createScope` — manual scope
 
 ```typescript
-import { createScope } from '@lolo-ui'
+import { createScope } from '@jayobado/lolo-ui'
 
 const scope = createScope()
 
@@ -436,7 +449,7 @@ scope.dispose()
 ### `runInScope` — implicit scope for multiple hooks
 
 ```typescript
-import { createScope, runInScope } from '@lolo-ui'
+import { createScope, runInScope } from '@jayobado/lolo-ui'
 
 const scope = createScope()
 
@@ -477,7 +490,7 @@ dispose()
 
 ## Router
 ```typescript
-import { createApp } from '@lolo-ui'
+import { createApp } from '@jayobado/lolo-ui'
 
 // Auth guard — return true to proceed, string to redirect
 const requiresAuth = async () => {
@@ -548,7 +561,7 @@ Define your service contract once. Swap the transport without touching your view
 ### Defining services
 ```typescript
 // services/app.ts
-import { Services } from '@lolo-ui'
+import { Services } from '@jayobado/lolo-ui'
 
 const { defineServices, query, mutation, subscription } = Services
 
@@ -587,7 +600,7 @@ export type AppServices = typeof appServices
 ### Configuring an adapter
 ```typescript
 // main.ts
-import { configureServices, Adapters } from '@lolo-ui'
+import { configureServices, Adapters } from '@jayobado/lolo-ui'
 import { appServices }                  from './services/app.ts'
 
 configureServices(
@@ -599,8 +612,8 @@ configureServices(
 
 ### Using services in a view
 ```typescript
-import { defineComponent, signal, div } from '@lolo-ui'
-import { useServices }                   from '@lolo-ui'
+import { defineComponent, signal, div } from '@jayobado/lolo-ui'
+import { useServices }                   from '@jayobado/lolo-ui'
 import type { AppServices, User }        from './services/app.ts'
 
 const UsersView = defineComponent((_props, { onMount, effect }) => {
@@ -645,7 +658,7 @@ const UsersView = defineComponent((_props, { onMount, effect }) => {
 
 ### Available adapters
 ```typescript
-import { Adapters } from '@lolo-ui'
+import { Adapters } from '@jayobado/lolo-ui'
 
 // tRPC
 Adapters.createTrpcAdapter(services, { baseUrl: '/api' })
@@ -671,7 +684,7 @@ Adapters.createConnectAdapter(services, {
 
 ### Custom adapter
 ```typescript
-import type { Transport } from '@lolo-ui'
+import type { Transport } from '@jayobado/lolo-ui'
 
 const myTransport: Transport = {
   query:     (path, input) => myClient.get(path, input),
@@ -739,7 +752,7 @@ const { submit, submitting, errors } = useSubmit(
 #### Full component example
 
 ```typescript
-import { defineComponent, signal, div, span, input, button, form } from '@lolo-ui'
+import { defineComponent, signal, div, span, input, button, form } from '@jayobado/lolo-ui'
 import { useSubmit, flatten } from '@jayobado/lolo-ui/form'
 import * as v from 'valibot'
 
@@ -836,7 +849,7 @@ const { submit, submitting } = useSubmit(
 #### Shared state
 
 ```typescript
-import { signal } from '@lolo-ui'
+import { signal } from '@jayobado/lolo-ui'
 
 const submitting = signal(false)
 
@@ -955,7 +968,7 @@ const { data, error, loading, refetch } = useQuery(
 When a signal changes inside the query function, the query re-fetches automatically:
 
 ```typescript
-import { signal } from '@lolo-ui'
+import { signal } from '@jayobado/lolo-ui'
 import { useQuery } from '@jayobado/lolo-ui/query'
 
 const page = signal(1)
@@ -973,7 +986,7 @@ page.set(2)
 Use `enabled` to control when the query runs:
 
 ```typescript
-import { signal } from '@lolo-ui'
+import { signal } from '@jayobado/lolo-ui'
 import { useQuery } from '@jayobado/lolo-ui/query'
 
 const userId = signal<string | null>(null)
@@ -999,7 +1012,7 @@ const { data, error } = useQuery(
 #### With lolo-ui components
 
 ```typescript
-import { defineComponent, signal, div, span, button } from '@lolo-ui'
+import { defineComponent, signal, div, span, button } from '@jayobado/lolo-ui'
 import { useQuery } from '@jayobado/lolo-ui/query'
 
 const UserList = defineComponent((_props, ctx) => {
@@ -1038,7 +1051,7 @@ const UserList = defineComponent((_props, ctx) => {
 #### Standalone usage
 
 ```typescript
-import { createScope } from '@lolo-ui'
+import { createScope } from '@jayobado/lolo-ui'
 import { useQuery } from '@jayobado/lolo-ui/query'
 
 const scope = createScope()
@@ -1091,7 +1104,7 @@ const { mutate, loading, error, data } = useMutation(
 #### Usage in a component
 
 ```typescript
-import { defineComponent, signal, div, button, span } from '@lolo-ui'
+import { defineComponent, signal, div, button, span } from '@jayobado/lolo-ui'
 import { useMutation } from '@jayobado/lolo-ui/query'
 
 const DeleteButton = defineComponent<{ userId: string }>((props, ctx) => {
@@ -1177,7 +1190,7 @@ Wraps a label, input (passed as children), and optional error message into a `di
 
 ```typescript
 import { FormField } from '@jayobado/lolo-ui/components'
-import { input } from '@lolo-ui'
+import { input } from '@jayobado/lolo-ui'
 
 FormField(
   { label: 'Email', name: 'email', required: true },
@@ -1223,7 +1236,7 @@ FormField(
 
 ```typescript
 import { FormGroup, FormField } from '@jayobado/lolo-ui/components'
-import { input } from '@lolo-ui'
+import { input } from '@jayobado/lolo-ui'
 
 FormGroup(
   { legend: 'Billing address', styles: { border: '1px solid #333', padding: 16, borderRadius: 8 } },
@@ -1246,7 +1259,7 @@ FormGroup(
 
 ```typescript
 import { DataTable } from '@jayobado/lolo-ui/components'
-import { button } from '@lolo-ui'
+import { button } from '@jayobado/lolo-ui'
 import type { Column } from '@jayobado/lolo-ui/components'
 
 interface User { id: string; name: string; role: string }
@@ -1272,7 +1285,7 @@ DataTable({
 #### Reactive table
 
 ```typescript
-import { defineComponent, signal, div } from '@lolo-ui'
+import { defineComponent, signal, div } from '@jayobado/lolo-ui'
 import { useQuery } from '@jayobado/lolo-ui/query'
 import { DataTable } from '@jayobado/lolo-ui/components'
 
@@ -1341,7 +1354,7 @@ import {
 
 ```typescript
 import { createPortal } from '@jayobado/lolo-ui/primitives'
-import { div } from '@lolo-ui'
+import { div } from '@jayobado/lolo-ui'
 
 const { element, remove } = createPortal(
   div(null, 'I am portaled'),
@@ -1449,7 +1462,7 @@ remove() // clear from storage and reset to initial
 ### `useDebounce` — debounce a reactive value
 
 ```typescript
-import { signal } from '@lolo-ui'
+import { signal } from '@jayobado/lolo-ui'
 import { useDebounce } from '@jayobado/lolo-ui/primitives'
 
 const search = signal('')
@@ -1562,7 +1575,7 @@ const ids = toArray()
 
 ```typescript
 import { useClipboard } from '@jayobado/lolo-ui/primitives'
-import { button } from '@lolo-ui'
+import { button } from '@jayobado/lolo-ui'
 
 const { copy, copied } = useClipboard({ resetDelay: 2000 })
 
@@ -1583,7 +1596,7 @@ The `@jayobado/lolo-ui/components` subpath also provides unstyled interactive co
 
 ```typescript
 import { useModal } from '@jayobado/lolo-ui/components'
-import { div, h2, p, button } from '@lolo-ui'
+import { div, h2, p, button } from '@jayobado/lolo-ui'
 
 const { open, close, isOpen } = useModal(
   () => div(null,
@@ -1667,7 +1680,7 @@ toast.show('Persistent message', { duration: 0 })
 
 ```typescript
 import { useTooltip } from '@jayobado/lolo-ui/components'
-import { button } from '@lolo-ui'
+import { button } from '@jayobado/lolo-ui'
 
 const btn = button(null, '⚙')
 
@@ -1697,7 +1710,7 @@ useTooltip(btn, {
 
 ```typescript
 import { useDropdown } from '@jayobado/lolo-ui/components'
-import { button } from '@lolo-ui'
+import { button } from '@jayobado/lolo-ui'
 
 const btn = button(null, 'Actions')
 
@@ -1775,7 +1788,16 @@ my-app/
 
 ## Working with kiln
 
-`lolo-ui` is designed to be served by [kiln](https://github.com/jayobado/kiln) which handles TypeScript transpilation, HMR, static file serving, and deployment builds.
+`lolo-ui` is designed to be served by [kiln](https://github.com/jayobado/kiln) (v0.1.8+) which handles TypeScript transpilation, import specifier rewriting, HMR, and deployment builds. kiln reads your `deno.json` import map and `deno.lock`, rewrites bare specifiers like `@jayobado/lolo-ui` to versioned `/jsr/` paths, and serves the transpiled modules from jsr.io on demand.
+
+```json
+{
+  "imports": {
+    "@jayobado/kiln": "jsr:@jayobado/kiln@^0.1.8",
+    "@jayobado/lolo-ui": "jsr:@jayobado/lolo-ui@^0.1.9"
+  }
+}
+```
 
 ## Versioning
 ```bash
