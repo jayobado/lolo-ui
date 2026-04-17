@@ -13,8 +13,8 @@ An SPA framework toolkit for building dashboards and data-heavy UIs in pure Type
 - **Services** — pluggable data layer with typed adapters for tRPC, REST, and Connect-RPC
 - **Form handling** — submission and validation hooks using any Standard Schema library (`@jayobado/lolo-ui/form`)
 - **Data fetching** — `useQuery` and `useMutation` hooks with reactive re-fetching, retry, and scope support (`@jayobado/lolo-ui/query`)
-- **Components** — unstyled `FormField`, `FormGroup`, and `DataTable` helpers (`@jayobado/lolo-ui/components`)
-- **Interactive components** — unstyled `useModal`, `createToaster`, `useTooltip`, `useDropdown` (`@jayobado/lolo-ui/components`)
+- **Components** — unstyled `formField`, `formGroup`, and `dataTable` helpers (`@jayobado/lolo-ui/components`)
+- **Hooks** — unstyled `useModal`, `useToaster`, `useTooltip`, `useDropdown` (`@jayobado/lolo-ui/hooks`)
 - **Primitives** — `useMediaQuery`, `useLocalStorage`, `useDebounce`, `useInterval`, `useEventListener`, `usePagination`, `useSelection`, `useClipboard`, `createPortal`, `useClickOutside`, `useEscapeKey`, `useFocusTrap`, `useScrollLock`, `computePosition` (`@jayobado/lolo-ui/primitives`)
 
 ## What it is not
@@ -1181,18 +1181,18 @@ btn.addEventListener('click', () => toggleArchive(project.get().id))
 The `@jayobado/lolo-ui/components` subpath provides low-level helpers that reduce DOM boilerplate without imposing any styling or layout opinions. All components are unstyled by default — use `styles`, `class`, or both to control appearance.
 
 ```typescript
-import { FormField, FormGroup, DataTable } from '@jayobado/lolo-ui/components'
+import { formField, formGroup, dataTable } from '@jayobado/lolo-ui/components'
 ```
 
-### `FormField` — label + input + error
+### `formField` — label + input + error
 
 Wraps a label, input (passed as children), and optional error message into a `div`. The label is linked to the input via the `for` attribute, and errors use `role="alert"` for accessibility.
 
 ```typescript
-import { FormField } from '@jayobado/lolo-ui/components'
+import { formField } from '@jayobado/lolo-ui/components'
 import { input } from '@jayobado/lolo-ui'
 
-FormField(
+formField(
   { label: 'Email', name: 'email', required: true },
   input({ name: 'email', type: 'email', placeholder: 'you@example.com' }),
 )
@@ -1201,7 +1201,7 @@ FormField(
 #### Styled
 
 ```typescript
-FormField(
+formField(
   {
     label: 'Email',
     name: 'email',
@@ -1232,17 +1232,17 @@ FormField(
 | `labelStyles` | `StyleObject` | Atomic CSS on label |
 | `errorStyles` | `StyleObject` | Atomic CSS on error span |
 
-### `FormGroup` — fieldset + legend
+### `formGroup` — fieldset + legend
 
 ```typescript
-import { FormGroup, FormField } from '@jayobado/lolo-ui/components'
+import { formGroup, formField } from '@jayobado/lolo-ui/components'
 import { input } from '@jayobado/lolo-ui'
 
-FormGroup(
+formGroup(
   { legend: 'Billing address', styles: { border: '1px solid #333', padding: 16, borderRadius: 8 } },
-  FormField({ label: 'Street', name: 'street' }, input({ name: 'street' })),
-  FormField({ label: 'City', name: 'city' }, input({ name: 'city' })),
-  FormField({ label: 'Zip', name: 'zip' }, input({ name: 'zip' })),
+  formField({ label: 'Street', name: 'street' }, input({ name: 'street' })),
+  formField({ label: 'City', name: 'city' }, input({ name: 'city' })),
+  formField({ label: 'Zip', name: 'zip' }, input({ name: 'zip' })),
 )
 ```
 
@@ -1255,10 +1255,10 @@ FormGroup(
 | `styles` | `StyleObject` | Atomic CSS on fieldset |
 | `legendStyles` | `StyleObject` | Atomic CSS on legend |
 
-### `DataTable` — column-driven table
+### `dataTable` — column-driven table
 
 ```typescript
-import { DataTable } from '@jayobado/lolo-ui/components'
+import { dataTable } from '@jayobado/lolo-ui/components'
 import { button } from '@jayobado/lolo-ui'
 import type { Column } from '@jayobado/lolo-ui/components'
 
@@ -1274,7 +1274,7 @@ const columns: Column<User>[] = [
   },
 ]
 
-DataTable({
+dataTable({
   columns,
   rows: users.get(),
   onRowClick: (row) => navigateTo(`/users/${row.id}`),
@@ -1287,7 +1287,7 @@ DataTable({
 ```typescript
 import { defineComponent, signal, div } from '@jayobado/lolo-ui'
 import { useQuery } from '@jayobado/lolo-ui/query'
-import { DataTable } from '@jayobado/lolo-ui/components'
+import { dataTable } from '@jayobado/lolo-ui/components'
 
 const UserTable = defineComponent((_props, ctx) => {
   const { data, loading } = useQuery(() => api.users.list({ page: 1 }))
@@ -1305,7 +1305,7 @@ const UserTable = defineComponent((_props, ctx) => {
       return
     }
     container.replaceChildren(
-      DataTable({ columns, rows: data.get()?.data ?? [] }),
+      dataTable({ columns, rows: data.get()?.data ?? [] }),
     )
   })
 
@@ -1588,14 +1588,14 @@ ctx.effect(() => {
 })
 ```
 
-## Interactive components
+## Hooks
 
-The `@jayobado/lolo-ui/components` subpath also provides unstyled interactive components built on top of the primitives. All support the scope system and are styled entirely by you.
+The `@jayobado/lolo-ui/hooks` subpath provides unstyled interactive components built on top of the primitives. All support the scope system and are styled entirely by you.
 
 ### `useModal` — dialog with focus trapping and scroll lock
 
 ```typescript
-import { useModal } from '@jayobado/lolo-ui/components'
+import { useModal } from '@jayobado/lolo-ui/hooks'
 import { div, h2, p, button } from '@jayobado/lolo-ui'
 
 const { open, close, isOpen } = useModal(
@@ -1643,12 +1643,12 @@ const { open, close, isOpen } = useModal(
 | `isOpen` | `Signal<boolean>` | Whether modal is open |
 | `dispose` | `() => void` | Close and clean up |
 
-### `createToaster` — toast notifications
+### `useToaster` — toast notifications
 
 ```typescript
-import { createToaster } from '@jayobado/lolo-ui/components'
+import { useToaster } from '@jayobado/lolo-ui/hooks'
 
-const toast = createToaster({
+const toast = useToaster({
   containerStyles: {
     position: 'fixed', top: 16, right: 16, zIndex: 9999,
     display: 'flex', flexDirection: 'column', gap: 8,
@@ -1679,7 +1679,7 @@ toast.show('Persistent message', { duration: 0 })
 ### `useTooltip` — hover/focus tooltip
 
 ```typescript
-import { useTooltip } from '@jayobado/lolo-ui/components'
+import { useTooltip } from '@jayobado/lolo-ui/hooks'
 import { button } from '@jayobado/lolo-ui'
 
 const btn = button(null, '⚙')
@@ -1709,7 +1709,7 @@ useTooltip(btn, {
 ### `useDropdown` — accessible dropdown menu
 
 ```typescript
-import { useDropdown } from '@jayobado/lolo-ui/components'
+import { useDropdown } from '@jayobado/lolo-ui/hooks'
 import { button } from '@jayobado/lolo-ui'
 
 const btn = button(null, 'Actions')

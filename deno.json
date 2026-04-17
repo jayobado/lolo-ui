@@ -1,12 +1,13 @@
 {
   "name": "@jayobado/lolo-ui",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "license": "MIT",
   "exports": {
     ".": "./mod.ts",
     "./form": "./form/mod.ts",
     "./query": "./query/mod.ts",
     "./components": "./components/mod.ts",
+    "./hooks": "./hooks/mod.ts",
     "./primitives": "./primitives/mod.ts"
   },
 
@@ -15,7 +16,7 @@
   },
 
   "tasks": {
-    "check": "deno check mod.ts form/mod.ts query/mod.ts components/mod.ts primitives/mod.ts"
+    "check": "deno check mod.ts form/mod.ts query/mod.ts components/mod.ts hooks/mod.ts primitives/mod.ts"
   },
 
   "compilerOptions": {

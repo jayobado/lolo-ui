@@ -8,7 +8,7 @@ export interface FormGroupProps {
 	legendStyles?: StyleObject
 }
 
-export function FormGroup(
+export function formGroup(
 	props: FormGroupProps,
 	...children: (HTMLElement | string)[]
 ): HTMLElement {

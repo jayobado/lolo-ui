@@ -21,7 +21,7 @@ export interface DataTableProps<T> {
 	onRowClick?: (row: T, index: number) => void
 }
 
-export function DataTable<T extends Record<string, unknown>>(
+export function dataTable<T extends Record<string, unknown>>(
 	props: DataTableProps<T>,
 ): HTMLElement {
 	const { columns, rows, emptyText = 'No data' } = props

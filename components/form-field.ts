@@ -12,7 +12,7 @@ export interface FormFieldProps {
 	errorStyles?: StyleObject
 }
 
-export function FormField(
+export function formField(
 	props: FormFieldProps,
 	...children: (HTMLElement | string)[]
 ): HTMLElement {

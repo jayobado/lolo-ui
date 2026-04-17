@@ -23,7 +23,7 @@ export interface Toaster {
 	dispose: () => void
 }
 
-export function createToaster(options?: ToasterOptions): Toaster {
+export function useToaster(options?: ToasterOptions): Toaster {
 	const opts = options ?? {}
 
 	const container = document.createElement('div')
