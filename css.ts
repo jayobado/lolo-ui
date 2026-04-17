@@ -213,9 +213,14 @@ export interface FontFace {
 	display?: string
 }
 
+export interface KeyframeBlock {
+	[stop: string]: StyleProperties
+}
+
 export function globalStyles(
 	rules: Record<string, StyleProperties | Record<string, CSSValue>>,
 	fonts?: FontFace[],
+	keyframes?: Record<string, KeyframeBlock>,
 ): void {
 	const sheet = getSheet()
 
@@ -230,6 +235,26 @@ export function globalStyles(
 			].filter(Boolean).join(';')
 			try {
 				sheet.insertRule(`@font-face{${declarations}}`, sheet.cssRules.length)
+			} catch { /* skip invalid */ }
+		}
+	}
+
+	if (keyframes) {
+		for (const [name, stops] of Object.entries(keyframes)) {
+			const body = Object.entries(stops)
+				.map(([stop, props]) => {
+					const decls = Object.entries(props)
+						.filter(([_, v]) => v != null)
+						.map(([p, v]) => {
+							if (p.startsWith('--')) return `${p}:${v}`
+							return `${kebab(p)}:${toValue(p, v as CSSValue)}`
+						})
+						.join(';')
+					return `${stop}{${decls}}`
+				})
+				.join('')
+			try {
+				sheet.insertRule(`@keyframes ${name}{${body}}`, sheet.cssRules.length)
 			} catch { /* skip invalid */ }
 		}
 	}

@@ -6,7 +6,7 @@ An SPA framework toolkit for building dashboards and data-heavy UIs in pure Type
 
 - **Signals** — fine-grained reactive primitives (`signal`, `computed`, `effect`, `batch`)
 - **DOM** — typed element factories that build real DOM nodes directly (`div`, `span`, `button`, `input` etc.)
-- **CSS** — atomic CSS-in-JS engine with pseudo-class, media query, and global styles support
+- **CSS** — atomic CSS-in-JS engine with pseudo-class, media query, keyframes, and global styles support
 - **Components** — `defineComponent` with scoped lifecycle and auto-disposed effects
 - **Scopes** — composable lifecycle containers for hooks — work inside and outside components
 - **Router** — client-side routing with params, guards, nested layouts, query strings
@@ -422,6 +422,27 @@ globalStyles({
 ```
 
 Place font files in your static directory (e.g. `client/fonts/`). Each entry generates an `@font-face` rule with `font-display: swap` by default.
+
+### Keyframes
+
+Pass keyframe animations as the third argument to `globalStyles()`:
+```typescript
+globalStyles({
+  '.spinner': { animation: 'spin 1s linear infinite' },
+  '.fade-in': { animation: 'fadeIn 0.3s ease-out' },
+}, [], {
+  spin: {
+    '0%':   { transform: 'rotate(0deg)' },
+    '100%': { transform: 'rotate(360deg)' },
+  },
+  fadeIn: {
+    '0%':   { opacity: 0, transform: 'translateY(-8px)' },
+    '100%': { opacity: 1, transform: 'translateY(0)' },
+  },
+})
+```
+
+Each key in the keyframes object becomes the animation name. The value is an object mapping stops (e.g. `'0%'`, `'50%'`, `'100%'`, `'from'`, `'to'`) to style properties. The same camelCase-to-kebab conversion and auto `px` rules apply.
 
 ## Scopes
 
