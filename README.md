@@ -126,7 +126,7 @@ createApp({
   routes: [
     { path: '/', view: (ctx) => Counter(ctx) },
   ],
-}).init()
+}).mount()
 ```
 ```html
 <!-- index.html -->
@@ -549,11 +549,11 @@ createApp({
   ],
 
   fallback: (ctx) => NotFoundView(ctx),
-
-  onInit: async () => {
-    // Runs once before first route renders
-  },
-}).init()
+})
+.onInit(async () => {
+  // Runs once before first route renders
+})
+.init()
 ```
 
 ### Route context
@@ -563,6 +563,33 @@ interface RouteContext {
   query:  Record<string, string>  // ?tab=info  → { tab: 'info' }
   path:   string                  // /users/123
 }
+```
+
+### Chaining
+
+`createApp` returns an `App` object with chainable methods:
+
+| Method | Description |
+|---|---|
+| `use(plugin)` | Register a plugin — receives the `App` instance |
+| `onInit(fn)` | Register an async init function — runs before the first route renders |
+| `init()` | Resolve mount point, run plugins, run init functions, start router |
+| `mount()` | Like `init()`, but waits for `DOMContentLoaded` if the document is still loading |
+
+```typescript
+createApp({
+  mountPoint: '#app',
+  routes,
+  fallback: (ctx) => NotFoundView(ctx),
+})
+.use(myPlugin)
+.onInit(async () => {
+  await loadConfig()
+})
+.onInit(async () => {
+  configureServices(resolved)
+})
+.mount()
 ```
 
 ### Navigation
