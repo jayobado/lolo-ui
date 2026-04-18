@@ -522,7 +522,7 @@ createApp({
   mountPoint: '#app',
 
   routes: [
-    // Public
+    // View routes
     { path: '/',      view: (ctx) => HomeView(ctx)  },
     { path: '/login', view: (ctx) => LoginView(ctx) },
 
@@ -532,24 +532,20 @@ createApp({
     // Query strings — available via ctx.query.tab
     { path: '/settings', view: (ctx) => SettingsView(ctx) },
 
-    // With auth guard
+    // Layout route — wraps all children in a shared layout
     {
       path:   '/dashboard',
-      view:   (ctx) => DashboardView(ctx),
-      guards: [requiresAuth],
-    },
-
-    // Nested layout
-    {
-      path:   '/dashboard/users',
       layout: (content, ctx) => DashboardLayout({ content, ctx }),
-      view:   (ctx) => UsersView(ctx),
       guards: [requiresAuth],
+      children: [
+        { path: '/dashboard',       view: (ctx) => DashboardView(ctx) },
+        { path: '/dashboard/users', view: (ctx) => UsersView(ctx) },
+      ],
     },
 
     // Redirect — string or function
-    { path: '/home',     redirect: '/' },
-    { path: '/profile',  redirect: (ctx) => `/users/${ctx.params.id}` },
+    { path: '/home',    redirect: '/' },
+    { path: '/old/:id', redirect: (ctx) => `/users/${ctx.params.id}` },
   ],
 
   fallback: (ctx) => NotFoundView(ctx),
@@ -568,6 +564,18 @@ interface RouteContext {
   path:   string                  // /users/123
 }
 ```
+
+### Route types
+
+Routes are a discriminated union — each route is exactly one of:
+
+| Type | Required field | Description |
+|---|---|---|
+| `ViewRoute` | `view` | Renders a view function. Supports `title` |
+| `RedirectRoute` | `redirect` | Navigates to another path (string or function) |
+| `LayoutRoute` | `layout` + `children` | Wraps child routes in a shared layout |
+
+All three share `path`, `guards?`, and `meta?`. Guards on a `LayoutRoute` are inherited by all its children. Layout routes are flattened at init — the router resolves each child with its parent's layout and merged guards.
 
 ### Chaining
 

@@ -13,15 +13,27 @@ export type GuardFn = (
 	context: RouteContext
 ) => boolean | string | Promise<boolean | string>
 
-export interface RouteDefinition {
+interface RouteBase {
 	path: string
-	view?: (context: RouteContext) => HTMLElement
-	redirect?: string | ((context: RouteContext) => string)
-	layout?: (content: HTMLElement, context: RouteContext) => HTMLElement
 	guards?: GuardFn[]
 	meta?: Record<string, unknown>
+}
+
+export interface RedirectRoute extends RouteBase {
+	redirect: string | ((context: RouteContext) => string)
+}
+
+export interface ViewRoute extends RouteBase {
+	view: (context: RouteContext) => HTMLElement
 	title?: string | ((context: RouteContext) => string)
 }
+
+export interface LayoutRoute extends RouteBase {
+	layout: (content: HTMLElement, context: RouteContext) => HTMLElement
+	children: RouteDefinition[]
+}
+
+export type RouteDefinition = RedirectRoute | ViewRoute | LayoutRoute
 
 function pathToRegex(path: string): RegExp {
 	const pattern = path
@@ -62,22 +74,67 @@ export function navigateTo(path: string): void {
 	globalNavigate(path)
 }
 
+// ─── Type guards ──────────────────────────────────────────────────────────────
+
+function isRedirect(route: RouteDefinition): route is RedirectRoute {
+	return 'redirect' in route
+}
+
+function isLayout(route: RouteDefinition): route is LayoutRoute {
+	return 'layout' in route
+}
+
+function isView(route: RouteDefinition): route is ViewRoute {
+	return 'view' in route
+}
+
+// ─── Flatten routes ───────────────────────────────────────────────────────────
+
+interface FlatRoute {
+	regex: RegExp
+	route: RedirectRoute | ViewRoute
+	layout?: LayoutRoute['layout']
+	guards: GuardFn[]
+}
+
+function flattenRoutes(
+	routes: RouteDefinition[],
+	parentLayout?: LayoutRoute['layout'],
+	parentGuards: GuardFn[] = [],
+): FlatRoute[] {
+	const flat: FlatRoute[] = []
+
+	for (const route of routes) {
+		const guards = [...parentGuards, ...(route.guards ?? [])]
+
+		if (isLayout(route)) {
+			flat.push(...flattenRoutes(route.children, route.layout, guards))
+		} else {
+			flat.push({
+				regex: pathToRegex(route.path),
+				route,
+				layout: parentLayout,
+				guards,
+			})
+		}
+	}
+
+	return flat
+}
+
 // ─── createRouter ─────────────────────────────────────────────────────────────
 
 export function createRouter(options: RouterOptions): Router {
 	const { outlet, routes, onError, fallback, scrollToTop = true } = options
 
-	const compiled = routes.map(route => ({
-		route,
-		regex: pathToRegex(route.path),
-	}))
+	const compiled = flattenRoutes(routes)
 
 	let currentEl: HTMLElement | null = null
 
 	function matchRoute(pathname: string) {
-		for (const { route, regex } of compiled) {
-			const match = pathname.match(regex)
-			if (match) return { route, params: match.groups ?? {} as RouteParams }
+		for (const entry of compiled) {
+			const match = pathname.match(entry.regex)
+			if (match) return { ...entry, params: match.groups ?? {} as RouteParams }
 		}
 		return null
 	}
@@ -103,16 +160,16 @@ export function createRouter(options: RouterOptions): Router {
 		}
 
 		try {
-			if (matched?.route.guards?.length) {
-				const guardResult = await runGuards(matched.route.guards, context)
+			if (matched?.guards.length) {
+				const guardResult = await runGuards(matched.guards, context)
 				if (guardResult !== true) {
 					navigate(guardResult)
 					return
 				}
 			}
 
-			// ── Redirect ──────────────────────────────────────────────────────
-			if (matched?.route.redirect) {
+			// ── Redirect ──────────────────────────────────────────────────
+			if (matched && isRedirect(matched.route)) {
 				const target = typeof matched.route.redirect === 'function'
 					? matched.route.redirect(context)
 					: matched.route.redirect
@@ -128,7 +185,7 @@ export function createRouter(options: RouterOptions): Router {
 
 			let viewEl: HTMLElement
 
-			if (!matched || !matched.route.view) {
+			if (!matched || !isView(matched.route)) {
 				viewEl = fallback
 					? fallback(context)
 					: (() => {
@@ -138,8 +195,8 @@ export function createRouter(options: RouterOptions): Router {
 					})()
 			} else {
 				const rawView = matched.route.view(context)
-				viewEl = matched.route.layout
-					? matched.route.layout(rawView, context)
+				viewEl = matched.layout
+					? matched.layout(rawView, context)
 					: rawView
 			}
 
@@ -147,7 +204,7 @@ export function createRouter(options: RouterOptions): Router {
 			currentEl = viewEl
 			runMount(viewEl)
 
-			if (matched?.route.title) {
+			if (matched && isView(matched.route) && matched.route.title) {
 				document.title = typeof matched.route.title === 'function'
 					? matched.route.title(context)
 					: matched.route.title
@@ -159,7 +216,7 @@ export function createRouter(options: RouterOptions): Router {
 			onError ? onError(err) : console.error('[router]', err)
 		}
 	}
-	
+
 	function navigate(url: string): void {
 		history.pushState(null, '', url)
 		const { pathname, search } = new URL(url, location.origin)
@@ -184,7 +241,6 @@ export function createRouter(options: RouterOptions): Router {
 		render(location.pathname, location.search)
 	})
 
-	// Set global navigate so views can use navigateTo()
 	globalNavigate = navigate
 
 	render(location.pathname, location.search)
