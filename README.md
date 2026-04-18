@@ -519,12 +519,14 @@ const requiresAuth = async () => {
 }
 
 createApp({
+  name:       'My App',
+  favicon:    '/favicons/favicon.svg',
   mountPoint: '#app',
 
   routes: [
-    // View routes
-    { path: '/',      view: (ctx) => HomeView(ctx)  },
-    { path: '/login', view: (ctx) => LoginView(ctx) },
+    // View routes — title is combined with app name: "Home - My App"
+    { path: '/',      view: (ctx) => HomeView(ctx),  title: 'Home' },
+    { path: '/login', view: (ctx) => LoginView(ctx), title: 'Login' },
 
     // Named params — available via ctx.params.id
     { path: '/users/:id', view: (ctx) => UserView(ctx) },
@@ -572,7 +574,7 @@ Routes are a discriminated union — each route is exactly one of:
 
 | Type | Required field | Description |
 |---|---|---|
-| `ViewRoute` | `view` | Renders a view function. Supports `title` |
+| `ViewRoute` | `view` | Renders a view function. Supports `title` (combined with `name` as `"title - name"`) |
 | `RedirectRoute` | `redirect` | Navigates to another path (string or function) |
 | `LayoutRoute` | `layout` + `children` | Wraps child routes in a shared layout |
 

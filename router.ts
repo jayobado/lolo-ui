@@ -56,6 +56,7 @@ export interface RouterOptions {
 	onError?: (err: unknown) => void
 	fallback?: (context: RouteContext) => HTMLElement
 	scrollToTop?: boolean
+	appName?: string
 }
 
 export interface Router {
@@ -129,7 +130,7 @@ function flattenRoutes(
 // ─── createRouter ─────────────────────────────────────────────────────────────
 
 export function createRouter(options: RouterOptions): Router {
-	const { outlet, routes, onError, fallback, scrollToTop = true } = options
+	const { outlet, appName, routes, onError, fallback, scrollToTop = true } = options
 
 	const compiled = flattenRoutes(routes)
 
@@ -209,9 +210,10 @@ export function createRouter(options: RouterOptions): Router {
 			runMount(viewEl)
 
 			if (matched && isView(matched.route) && matched.route.title) {
-				document.title = typeof matched.route.title === 'function'
+				const viewTitle = typeof matched.route.title === 'function'
 					? matched.route.title(context)
 					: matched.route.title
+				document.title = appName ? `${viewTitle} - ${appName}` : viewTitle
 			}
 
 			if (scrollToTop) globalThis.scrollTo(0, 0)
