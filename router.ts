@@ -14,23 +14,25 @@ export type GuardFn = (
 ) => boolean | string | Promise<boolean | string>
 
 interface RouteBase {
-	path: string
 	guards?: GuardFn[]
 	meta?: Record<string, unknown>
 }
 
 export interface RedirectRoute extends RouteBase {
+	path: string
 	redirect: string | ((context: RouteContext) => string)
 }
 
 export interface ViewRoute extends RouteBase {
-	view: (context: RouteContext) => HTMLElement
+	path: string
 	title?: string | ((context: RouteContext) => string)
+	view: (context: RouteContext) => HTMLElement
 }
 
 export interface LayoutRoute extends RouteBase {
 	layout: (content: HTMLElement, context: RouteContext) => HTMLElement
 	children: RouteDefinition[]
+	path?: string
 }
 
 export type RouteDefinition = RedirectRoute | ViewRoute | LayoutRoute
@@ -101,6 +103,7 @@ function flattenRoutes(
 	routes: RouteDefinition[],
 	parentLayout?: LayoutRoute['layout'],
 	parentGuards: GuardFn[] = [],
+	parentPath: string = '',
 ): FlatRoute[] {
 	const flat: FlatRoute[] = []
 
@@ -108,17 +111,18 @@ function flattenRoutes(
 		const guards = [...parentGuards, ...(route.guards ?? [])]
 
 		if (isLayout(route)) {
-			flat.push(...flattenRoutes(route.children, route.layout, guards))
+			const base = parentPath + (route.path ?? '')
+			flat.push(...flattenRoutes(route.children, route.layout, guards, base))
 		} else {
+			const fullPath = parentPath + route.path
 			flat.push({
-				regex: pathToRegex(route.path),
-				route,
+				regex: pathToRegex(fullPath),
+				route: { ...route, path: fullPath },
 				layout: parentLayout,
 				guards,
 			})
 		}
 	}
-
 	return flat
 }
 

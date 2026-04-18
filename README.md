@@ -533,13 +533,14 @@ createApp({
     { path: '/settings', view: (ctx) => SettingsView(ctx) },
 
     // Layout route — wraps all children in a shared layout
+    // path is optional and prefixed to each child's path
     {
       path:   '/dashboard',
       layout: (content, ctx) => DashboardLayout({ content, ctx }),
       guards: [requiresAuth],
       children: [
-        { path: '/dashboard',       view: (ctx) => DashboardView(ctx) },
-        { path: '/dashboard/users', view: (ctx) => UsersView(ctx) },
+        { path: '',       view: (ctx) => DashboardView(ctx) },  // /dashboard
+        { path: '/users', view: (ctx) => UsersView(ctx) },      // /dashboard/users
       ],
     },
 
@@ -575,7 +576,7 @@ Routes are a discriminated union — each route is exactly one of:
 | `RedirectRoute` | `redirect` | Navigates to another path (string or function) |
 | `LayoutRoute` | `layout` + `children` | Wraps child routes in a shared layout |
 
-All three share `path`, `guards?`, and `meta?`. Guards on a `LayoutRoute` are inherited by all its children. Layout routes are flattened at init — the router resolves each child with its parent's layout and merged guards.
+`ViewRoute` and `RedirectRoute` require `path`. `LayoutRoute` has an optional `path` that is prefixed to each child's path. All three share `guards?` and `meta?`. Guards on a `LayoutRoute` are inherited by all its children. Layout routes are flattened at init — the router resolves each child with its parent's layout, prefix, and merged guards.
 
 ### Chaining
 
