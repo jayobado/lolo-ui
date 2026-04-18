@@ -546,6 +546,10 @@ createApp({
       view:   (ctx) => UsersView(ctx),
       guards: [requiresAuth],
     },
+
+    // Redirect — string or function
+    { path: '/home',     redirect: '/' },
+    { path: '/profile',  redirect: (ctx) => `/users/${ctx.params.id}` },
   ],
 
   fallback: (ctx) => NotFoundView(ctx),

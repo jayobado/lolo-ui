@@ -15,7 +15,8 @@ export type GuardFn = (
 
 export interface RouteDefinition {
 	path: string
-	view: (context: RouteContext) => HTMLElement
+	view?: (context: RouteContext) => HTMLElement
+	redirect?: string | ((context: RouteContext) => string)
 	layout?: (content: HTMLElement, context: RouteContext) => HTMLElement
 	guards?: GuardFn[]
 	meta?: Record<string, unknown>
@@ -110,6 +111,15 @@ export function createRouter(options: RouterOptions): Router {
 				}
 			}
 
+			// ── Redirect ──────────────────────────────────────────────────────
+			if (matched?.route.redirect) {
+				const target = typeof matched.route.redirect === 'function'
+					? matched.route.redirect(context)
+					: matched.route.redirect
+				navigate(target)
+				return
+			}
+
 			if (currentEl) {
 				runUnmount(currentEl)
 				currentEl.remove()
@@ -118,7 +128,7 @@ export function createRouter(options: RouterOptions): Router {
 
 			let viewEl: HTMLElement
 
-			if (!matched) {
+			if (!matched || !matched.route.view) {
 				viewEl = fallback
 					? fallback(context)
 					: (() => {
@@ -137,7 +147,6 @@ export function createRouter(options: RouterOptions): Router {
 			currentEl = viewEl
 			runMount(viewEl)
 
-			// Set page title
 			if (matched?.route.title) {
 				document.title = typeof matched.route.title === 'function'
 					? matched.route.title(context)
@@ -150,7 +159,7 @@ export function createRouter(options: RouterOptions): Router {
 			onError ? onError(err) : console.error('[router]', err)
 		}
 	}
-
+	
 	function navigate(url: string): void {
 		history.pushState(null, '', url)
 		const { pathname, search } = new URL(url, location.origin)
