@@ -18,11 +18,11 @@ An SPA framework toolkit for building dashboards and data-heavy UIs in pure Type
 
 ## Styling
 
-lolo-ui is style-agnostic. It does not include a CSS engine — use any styling approach you prefer: Tailwind, vanilla CSS, or [`@jayobado/css`](https://github.com/jayobado/css) for atomic CSS-in-JS. All components and hooks accept `class` strings; the consumer is responsible for generating them.
+lolo-ui is style-agnostic. It does not include a CSS engine — use any styling approach you prefer: Tailwind, vanilla CSS, or [`@jayobado/lolo-css`](https://github.com/jayobado/lolo-css) for atomic CSS-in-JS. All components and hooks accept `class` strings; the consumer is responsible for generating them.
 
 ```typescript
-// Example with @jayobado/css
-import { css } from '@jayobado/css'
+// Example with @jayobado/lolo-css
+import { css } from '@jayobado/lolo-css'
 import { div } from '@jayobado/lolo-ui'
 
 div({ class: css({ display: 'flex', gap: 16 }) }, 'Hello')
