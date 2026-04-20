@@ -1,6 +1,4 @@
 import { signal } from '../signals.ts'
-import { css } from '../css.ts'
-import type { StyleObject } from '../css.ts'
 import { resolveScope } from '../scope.ts'
 import type { Scope } from '../scope.ts'
 import { createPortal } from '../primitives/portal.ts'
@@ -10,9 +8,7 @@ import { useScrollLock } from '../primitives/scroll-lock.ts'
 
 export interface ModalOptions {
 	class?: string
-	styles?: StyleObject
 	backdropClass?: string
-	backdropStyles?: StyleObject
 	closeOnBackdrop?: boolean
 	closeOnEscape?: boolean
 	trapFocus?: boolean
@@ -46,10 +42,7 @@ export function useModal(
 		isOpen.set(true)
 
 		backdrop = document.createElement('div')
-		const backdropClasses: string[] = []
-		if (opts.backdropClass) backdropClasses.push(opts.backdropClass)
-		if (opts.backdropStyles) backdropClasses.push(css(opts.backdropStyles))
-		if (backdropClasses.length) backdrop.className = backdropClasses.join(' ')
+		if (opts.backdropClass) backdrop.className = opts.backdropClass
 
 		if (opts.closeOnBackdrop !== false) {
 			backdrop.addEventListener('pointerdown', (e) => {
@@ -60,10 +53,7 @@ export function useModal(
 		const wrapper = document.createElement('div')
 		wrapper.setAttribute('role', 'dialog')
 		wrapper.setAttribute('aria-modal', 'true')
-		const wrapperClasses: string[] = []
-		if (opts.class) wrapperClasses.push(opts.class)
-		if (opts.styles) wrapperClasses.push(css(opts.styles))
-		if (wrapperClasses.length) wrapper.className = wrapperClasses.join(' ')
+		if (opts.class) wrapper.className = opts.class
 
 		wrapper.appendChild(content())
 		backdrop.appendChild(wrapper)

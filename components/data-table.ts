@@ -1,21 +1,17 @@
-import { css } from '../css.ts'
-import type { StyleObject } from '../css.ts'
-
 export interface Column<T> {
 	key: string
 	header: string
 	render?: (row: T, index: number) => HTMLElement | string
-	headerStyles?: StyleObject
-	cellStyles?: StyleObject
+	headerClass?: string
+	cellClass?: string
 }
 
 export interface DataTableProps<T> {
 	columns: Column<T>[]
 	rows: T[]
 	class?: string
-	styles?: StyleObject
-	headerStyles?: StyleObject
-	rowStyles?: StyleObject | ((row: T, index: number) => StyleObject)
+	headerClass?: string
+	rowClass?: string | ((row: T, index: number) => string)
 	emptyText?: string
 	rowKey?: (row: T, index: number) => string | number
 	onRowClick?: (row: T, index: number) => void
@@ -27,19 +23,15 @@ export function dataTable<T extends Record<string, unknown>>(
 	const { columns, rows, emptyText = 'No data' } = props
 
 	const table = document.createElement('table')
-	const classes: string[] = []
-	if (props.class) classes.push(props.class)
-	if (props.styles) classes.push(css(props.styles))
-	if (classes.length) table.className = classes.join(' ')
+	if (props.class) table.className = props.class
 
-	// Header
 	const thead = document.createElement('thead')
 	const headerRow = document.createElement('tr')
-	if (props.headerStyles) headerRow.className = css(props.headerStyles)
+	if (props.headerClass) headerRow.className = props.headerClass
 
 	for (const col of columns) {
 		const th = document.createElement('th')
-		if (col.headerStyles) th.className = css(col.headerStyles)
+		if (col.headerClass) th.className = col.headerClass
 		th.textContent = col.header
 		headerRow.appendChild(th)
 	}
@@ -47,7 +39,6 @@ export function dataTable<T extends Record<string, unknown>>(
 	thead.appendChild(headerRow)
 	table.appendChild(thead)
 
-	// Body
 	const tbody = document.createElement('tbody')
 
 	if (rows.length === 0) {
@@ -61,11 +52,11 @@ export function dataTable<T extends Record<string, unknown>>(
 		rows.forEach((row, index) => {
 			const tr = document.createElement('tr')
 
-			if (props.rowStyles) {
-				const s = typeof props.rowStyles === 'function'
-					? props.rowStyles(row, index)
-					: props.rowStyles
-				tr.className = css(s)
+			if (props.rowClass) {
+				const cls = typeof props.rowClass === 'function'
+					? props.rowClass(row, index)
+					: props.rowClass
+				if (cls) tr.className = cls
 			}
 
 			if (props.onRowClick) {
@@ -75,7 +66,7 @@ export function dataTable<T extends Record<string, unknown>>(
 
 			for (const col of columns) {
 				const td = document.createElement('td')
-				if (col.cellStyles) td.className = css(col.cellStyles)
+				if (col.cellClass) td.className = col.cellClass
 
 				const content = col.render
 					? col.render(row, index)

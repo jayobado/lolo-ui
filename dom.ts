@@ -1,11 +1,7 @@
-import { css } from './css.ts'
-import type { StyleObject } from './css.ts'
-
 type Child = Node | string | number | null | undefined | false
 
 export interface ElementProps {
 	class?: string
-	styles?: StyleObject
 	id?: string
 	role?: string
 	title?: string
@@ -143,15 +139,12 @@ const booleanAttrs = new Set([
 ])
 
 const skipAttrs = new Set([
-	'class', 'styles', 'key',
+	'class', 'key',
 	...Object.keys(eventMap),
 ])
 
 function applyProps(el: HTMLElement, props: ElementProps): void {
-	const classes: string[] = []
-	if (props.class) classes.push(props.class)
-	if (props.styles) classes.push(css(props.styles))
-	if (classes.length) el.className = classes.join(' ')
+	if (props.class) el.className = props.class
 
 	for (const [key, value] of Object.entries(props)) {
 		if (value == null || skipAttrs.has(key)) continue

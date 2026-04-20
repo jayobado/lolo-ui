@@ -1,15 +1,11 @@
-import { css } from '../css.ts'
-import type { StyleObject } from '../css.ts'
-
 export interface FormFieldProps {
 	label: string
 	name?: string
 	error?: string
 	required?: boolean
 	class?: string
-	styles?: StyleObject
-	labelStyles?: StyleObject
-	errorStyles?: StyleObject
+	labelClass?: string
+	errorClass?: string
 }
 
 export function formField(
@@ -19,15 +15,11 @@ export function formField(
 	const { label, name, error, required } = props
 
 	const wrapper = document.createElement('div')
-
-	const classes: string[] = []
-	if (props.class) classes.push(props.class)
-	if (props.styles) classes.push(css(props.styles))
-	if (classes.length) wrapper.className = classes.join(' ')
+	if (props.class) wrapper.className = props.class
 
 	const labelEl = document.createElement('label')
 	if (name) labelEl.setAttribute('for', name)
-	if (props.labelStyles) labelEl.className = css(props.labelStyles)
+	if (props.labelClass) labelEl.className = props.labelClass
 	labelEl.textContent = required ? `${label} *` : label
 	wrapper.appendChild(labelEl)
 
@@ -42,7 +34,7 @@ export function formField(
 	if (error) {
 		const errorEl = document.createElement('span')
 		errorEl.setAttribute('role', 'alert')
-		if (props.errorStyles) errorEl.className = css(props.errorStyles)
+		if (props.errorClass) errorEl.className = props.errorClass
 		errorEl.textContent = error
 		wrapper.appendChild(errorEl)
 	}

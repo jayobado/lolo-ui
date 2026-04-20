@@ -1,6 +1,4 @@
 import { signal } from '../signals.ts'
-import { css } from '../css.ts'
-import type { StyleObject } from '../css.ts'
 import { resolveScope } from '../scope.ts'
 import type { Scope } from '../scope.ts'
 import { createPortal } from '../primitives/portal.ts'
@@ -21,11 +19,9 @@ export interface DropdownOptions {
 	placement?: Placement
 	offset?: number
 	class?: string
-	styles?: StyleObject
 	itemClass?: string
-	itemStyles?: StyleObject
-	activeItemStyles?: StyleObject
-	disabledItemStyles?: StyleObject
+	activeItemClass?: string
+	disabledItemClass?: string
 	onSelect?: (item: DropdownItem) => void
 }
 
@@ -68,20 +64,16 @@ export function useDropdown(
 		children.forEach((child, i) => {
 			if (i === index) {
 				child.setAttribute('aria-selected', 'true')
-				if (options.activeItemStyles) {
-					child.className = [
-						options.itemClass ?? '',
-						options.itemStyles ? css(options.itemStyles) : '',
-						css(options.activeItemStyles),
-					].filter(Boolean).join(' ')
-				}
+				child.className = [
+					options.itemClass ?? '',
+					options.activeItemClass ?? '',
+				].filter(Boolean).join(' ')
 			} else {
 				child.removeAttribute('aria-selected')
 				const classes: string[] = []
 				if (options.itemClass) classes.push(options.itemClass)
-				if (options.itemStyles) classes.push(css(options.itemStyles))
-				if (items[i].disabled && options.disabledItemStyles) {
-					classes.push(css(options.disabledItemStyles))
+				if (items[i].disabled && options.disabledItemClass) {
+					classes.push(options.disabledItemClass)
 				}
 				child.className = classes.join(' ')
 			}
@@ -100,11 +92,7 @@ export function useDropdown(
 		const el = document.createElement('div')
 		el.setAttribute('role', 'listbox')
 		el.style.position = 'fixed'
-
-		const classes: string[] = []
-		if (options.class) classes.push(options.class)
-		if (options.styles) classes.push(css(options.styles))
-		if (classes.length) el.className = classes.join(' ')
+		if (options.class) el.className = options.class
 
 		items.forEach((item, i) => {
 			const row = document.createElement('div')
@@ -113,9 +101,8 @@ export function useDropdown(
 
 			const rowClasses: string[] = []
 			if (options.itemClass) rowClasses.push(options.itemClass)
-			if (options.itemStyles) rowClasses.push(css(options.itemStyles))
-			if (item.disabled && options.disabledItemStyles) {
-				rowClasses.push(css(options.disabledItemStyles))
+			if (item.disabled && options.disabledItemClass) {
+				rowClasses.push(options.disabledItemClass)
 			}
 			if (rowClasses.length) row.className = rowClasses.join(' ')
 

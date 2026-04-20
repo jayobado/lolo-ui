@@ -1,11 +1,7 @@
-import { css } from '../css.ts'
-import type { StyleObject } from '../css.ts'
-
 export interface FormGroupProps {
 	class?: string
-	styles?: StyleObject
 	legend?: string
-	legendStyles?: StyleObject
+	legendClass?: string
 }
 
 export function formGroup(
@@ -13,15 +9,11 @@ export function formGroup(
 	...children: (HTMLElement | string)[]
 ): HTMLElement {
 	const fieldset = document.createElement('fieldset')
-
-	const classes: string[] = []
-	if (props.class) classes.push(props.class)
-	if (props.styles) classes.push(css(props.styles))
-	if (classes.length) fieldset.className = classes.join(' ')
+	if (props.class) fieldset.className = props.class
 
 	if (props.legend) {
 		const legendEl = document.createElement('legend')
-		if (props.legendStyles) legendEl.className = css(props.legendStyles)
+		if (props.legendClass) legendEl.className = props.legendClass
 		legendEl.textContent = props.legend
 		fieldset.appendChild(legendEl)
 	}

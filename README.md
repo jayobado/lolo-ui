@@ -6,7 +6,6 @@ An SPA framework toolkit for building dashboards and data-heavy UIs in pure Type
 
 - **Signals** — fine-grained reactive primitives (`signal`, `computed`, `effect`, `batch`)
 - **DOM** — typed element factories that build real DOM nodes directly (`div`, `span`, `button`, `input` etc.)
-- **CSS** — atomic CSS-in-JS engine with pseudo-class, media query, keyframes, and global styles support
 - **Components** — `defineComponent` with scoped lifecycle and auto-disposed effects
 - **Scopes** — composable lifecycle containers for hooks — work inside and outside components
 - **Router** — client-side routing with params, guards, nested layouts, query strings
@@ -16,6 +15,24 @@ An SPA framework toolkit for building dashboards and data-heavy UIs in pure Type
 - **Components** — unstyled `formField`, `formGroup`, and `dataTable` helpers (`@jayobado/lolo-ui/components`)
 - **Hooks** — unstyled `useModal`, `useToaster`, `useTooltip`, `useDropdown` (`@jayobado/lolo-ui/hooks`)
 - **Primitives** — `useMediaQuery`, `useLocalStorage`, `useDebounce`, `useInterval`, `useEventListener`, `usePagination`, `useSelection`, `useClipboard`, `createPortal`, `useClickOutside`, `useEscapeKey`, `useFocusTrap`, `useScrollLock`, `computePosition` (`@jayobado/lolo-ui/primitives`)
+
+## Styling
+
+lolo-ui is style-agnostic. It does not include a CSS engine — use any styling approach you prefer: Tailwind, vanilla CSS, or [`@jayobado/css`](https://github.com/jayobado/css) for atomic CSS-in-JS. All components and hooks accept `class` strings; the consumer is responsible for generating them.
+
+```typescript
+// Example with @jayobado/css
+import { css } from '@jayobado/css'
+import { div } from '@jayobado/lolo-ui'
+
+div({ class: css({ display: 'flex', gap: 16 }) }, 'Hello')
+
+// Example with Tailwind
+div({ class: 'flex gap-4' }, 'Hello')
+
+// Example with plain CSS
+div({ class: 'container' }, 'Hello')
+```
 
 ## What it is not
 
@@ -39,11 +56,11 @@ Or in `deno.json`:
 ```json
 {
   "imports": {
-    "@jayobado/lolo-ui": "jsr:@jayobado/lolo-ui@^0.1.9",
-    "@jayobado/lolo-ui/form": "jsr:@jayobado/lolo-ui@^0.1.9/form",
-    "@jayobado/lolo-ui/query": "jsr:@jayobado/lolo-ui@^0.1.9/query",
-    "@jayobado/lolo-ui/components": "jsr:@jayobado/lolo-ui@^0.1.9/components",
-    "@jayobado/lolo-ui/primitives": "jsr:@jayobado/lolo-ui@^0.1.9/primitives"
+    "@jayobado/lolo-ui": "jsr:@jayobado/lolo-ui@^0.3.0",
+    "@jayobado/lolo-ui/form": "jsr:@jayobado/lolo-ui@^0.3.0/form",
+    "@jayobado/lolo-ui/query": "jsr:@jayobado/lolo-ui@^0.3.0/query",
+    "@jayobado/lolo-ui/components": "jsr:@jayobado/lolo-ui@^0.3.0/components",
+    "@jayobado/lolo-ui/primitives": "jsr:@jayobado/lolo-ui@^0.3.0/primitives"
   }
 }
 ```
@@ -101,20 +118,18 @@ import {
   defineComponent,
   signal,
   div, h1, button, span,
-  css,
 } from '@jayobado/lolo-ui'
 
 const Counter = defineComponent((_props, { effect }) => {
   const count   = signal(0)
   const countEl = span(null, '0')
 
-  // Scoped to component — disposed automatically on unmount
   effect(() => {
     countEl.textContent = String(count.get())
   })
 
   return div(
-    { styles: { display: 'flex', gap: '12px', alignItems: 'center' } },
+    { class: 'counter' },
     button({ onClick: () => count.update(n => n - 1) }, '−'),
     countEl,
     button({ onClick: () => count.update(n => n + 1) }, '+'),
@@ -196,11 +211,8 @@ import {
 // No props
 div(null, 'Hello')
 
-// With class and styles
-div({
-  class:  'my-card',
-  styles: { padding: 24, background: '#1a1a2e', borderRadius: 8 },
-}, 'Content')
+// With class
+div({ class: 'my-card' }, 'Content')
 
 // Event handlers
 button({ onClick: () => console.log('clicked') }, 'Click me')
@@ -239,7 +251,6 @@ All element factories extend `ElementProps`:
 | Prop | Type | Description |
 |---|---|---|
 | `class` | `string` | CSS class string |
-| `styles` | `StyleObject` | Atomic CSS (see CSS section) |
 | `id` | `string` | Element ID |
 | `role` | `string` | ARIA role |
 | `tabIndex` | `number` | Tab order |
@@ -252,6 +263,8 @@ All element factories extend `ElementProps`:
 | `onKeydown` | `(e: KeyboardEvent) => void` | Keydown handler |
 | `onFocus` | `(e: FocusEvent) => void` | Focus handler |
 | `onBlur` | `(e: FocusEvent) => void` | Blur handler |
+
+Specialised prop interfaces are available for `input` (`InputProps`), `button` (`ButtonProps`), `a` (`AnchorProps`), `img` (`ImgProps`), `form` (`FormProps`), `select` (`SelectProps`), `option` (`OptionProps`), `textarea` (`TextareaProps`), `label` (`LabelProps`), `th` (`ThProps`), and `td` (`TdProps`).
 
 ## Components
 
@@ -266,7 +279,6 @@ const UserCard = defineComponent<{ name: string; role: string }>(
     const expanded = signal(false)
     const detailEl = span(null, '')
 
-    // effect is scoped — disposed automatically when component unmounts
     effect(() => {
       detailEl.textContent = expanded.get()
         ? `Role: ${props.role}`
@@ -311,138 +323,6 @@ import { h } from '@jayobado/lolo-ui'
 // Typed props from component definition
 const el = h(UserCard, { name: 'Jane', role: 'Admin' })
 ```
-
-## CSS
-
-The CSS engine generates atomic class names from style objects and injects rules into a `<style>` tag in `<head>`. Identical property+value pairs always share the same class — rules are never duplicated.
-
-### `css()` — reactive styles
-```typescript
-import { css } from '@jayobado/lolo-ui'
-
-const className = css({
-  display:      'flex',
-  gap:          16,
-  padding:      '12px 24px',
-  background:   '#1a1a2e',
-  borderRadius: 8,
-
-  // Pseudo-classes
-  pseudo: {
-    ':hover':    { background: '#2a2a3e' },
-    ':focus':    { outline: '2px solid #4a9edd' },
-    ':disabled': { opacity: 0.5, cursor: 'not-allowed' },
-  },
-
-  // Media queries
-  media: {
-    '(max-width: 768px)': { padding: '8px 16px' },
-    '(prefers-color-scheme: light)': { background: '#ffffff' },
-  },
-})
-
-div({ class: className }, 'Styled')
-```
-
-### Combining classes
-```typescript
-// Static class + generated class
-div({ class: `my-existing-class ${css({ color: 'white' })}` })
-
-// Conditional
-const isActive = true
-div({
-  class: [
-    baseStyles,
-    isActive ? css({ background: '#4a9edd' }) : '',
-  ].filter(Boolean).join(' ')
-})
-```
-
-### Numbers and units
-
-Numbers are automatically converted to `px` except for unitless properties:
-```typescript
-css({
-  padding:      16,    // → padding: 16px
-  borderRadius: 8,     // → border-radius: 8px
-  opacity:      0.5,   // → opacity: 0.5  (no px)
-  zIndex:       10,    // → z-index: 10   (no px)
-  fontWeight:   700,   // → font-weight: 700 (no px)
-  lineHeight:   1.5,   // → line-height: 1.5 (no px)
-})
-```
-
-### `globalStyles()` — global rules and CSS variables
-
-For element selectors, resets, and CSS custom properties that don't belong in a scoped class:
-```typescript
-import { globalStyles } from '@jayobado/lolo-ui'
-
-globalStyles({
-  ':root': {
-    '--color-primary': '#2356d7',
-    '--color-danger': '#d61f47',
-    '--color-text': '#212529',
-    '--color-bg': '#fff',
-    '--color-border': '#dfe3ea',
-    '--radius': '0.375rem',
-    '--font-sans': '"Inter", system-ui, sans-serif',
-  },
-  '*, *::before, *::after': {
-    boxSizing: 'border-box',
-  },
-  'body': {
-    margin: 0,
-    fontFamily: 'var(--font-sans)',
-    fontSize: '16px',
-    lineHeight: 1.5,
-    color: 'var(--color-text)',
-    background: 'var(--color-bg)',
-  },
-  'a': {
-    color: 'var(--color-primary)',
-    textDecoration: 'none',
-  },
-})
-```
-
-Keys starting with `--` are passed through as CSS custom properties. Everything else uses the same camelCase-to-kebab conversion and auto `px` as `css()`. Rules are injected into the same shared `<style>` element.
-
-### Fonts
-
-Pass font faces as the second argument to `globalStyles()`:
-```typescript
-globalStyles({
-  'body': { fontFamily: '"Inter", system-ui, sans-serif' },
-}, [
-  { family: '"Inter"', src: 'url(/fonts/Inter-Regular.woff2) format("woff2")', weight: 400 },
-  { family: '"Inter"', src: 'url(/fonts/Inter-Medium.woff2) format("woff2")', weight: 500 },
-])
-```
-
-Place font files in your static directory (e.g. `client/fonts/`). Each entry generates an `@font-face` rule with `font-display: swap` by default.
-
-### Keyframes
-
-Pass keyframe animations as the third argument to `globalStyles()`:
-```typescript
-globalStyles({
-  '.spinner': { animation: 'spin 1s linear infinite' },
-  '.fade-in': { animation: 'fadeIn 0.3s ease-out' },
-}, [], {
-  spin: {
-    '0%':   { transform: 'rotate(0deg)' },
-    '100%': { transform: 'rotate(360deg)' },
-  },
-  fadeIn: {
-    '0%':   { opacity: 0, transform: 'translateY(-8px)' },
-    '100%': { opacity: 1, transform: 'translateY(0)' },
-  },
-})
-```
-
-Each key in the keyframes object becomes the animation name. The value is an object mapping stops (e.g. `'0%'`, `'50%'`, `'100%'`, `'from'`, `'to'`) to style properties. The same camelCase-to-kebab conversion and auto `px` rules apply.
 
 ## Scopes
 
@@ -535,7 +415,6 @@ createApp({
     { path: '/settings', view: (ctx) => SettingsView(ctx) },
 
     // Layout route — wraps all children in a shared layout
-    // path is optional and prefixed to each child's path
     {
       path:   '/dashboard',
       layout: (content, ctx) => DashboardLayout({ content, ctx }),
@@ -600,9 +479,6 @@ createApp({
 .use(myPlugin)
 .onInit(async () => {
   await loadConfig()
-})
-.onInit(async () => {
-  configureServices(resolved)
 })
 .mount()
 ```
@@ -697,7 +573,7 @@ const UsersView = defineComponent((_props, { onMount, effect }) => {
     }
   })
 
-  const container = div({ styles: { padding: 24 } })
+  const container = div({ class: 'users-view' })
 
   effect(() => {
     if (loading.get()) {
@@ -709,9 +585,7 @@ const UsersView = defineComponent((_props, { onMount, effect }) => {
       return
     }
     container.replaceChildren(
-      ...users.get().map(u =>
-        div({ styles: { padding: '8px 0' } }, u.name)
-      )
+      ...users.get().map(u => div(null, u.name))
     )
   })
 
@@ -784,7 +658,6 @@ const schema = v.object({
 const { submit, submitting, errors } = useSubmit(
   { input: () => fields, schema: () => schema },
   async (validated) => {
-    // validated is typed as { name: string; email: string }
     await api.createUser(validated)
   },
 )
@@ -806,7 +679,6 @@ const schema = z.object({
 const { submit, submitting, errors } = useSubmit(
   { input: () => fields, schema: () => schema },
   async (validated) => {
-    // validated is typed as { name: string; email: string }
     await api.createUser(validated)
   },
 )
@@ -951,8 +823,6 @@ If the element is a `<form>`, `checkValidity()` and `reportValidity()` are calle
 
 Continuously validates input against a schema using an effect. Useful for pre-submit validation or real-time feedback.
 
-#### With Valibot
-
 ```typescript
 import { useParse, flatten } from '@jayobado/lolo-ui/form'
 import * as v from 'valibot'
@@ -962,21 +832,6 @@ const fields = { age: '' }
 const { output, errors } = useParse({
   input: () => fields,
   schema: () => v.object({ age: v.number() }),
-  formatErrors: flatten,
-})
-```
-
-#### With Zod
-
-```typescript
-import { useParse, flatten } from '@jayobado/lolo-ui/form'
-import * as z from 'zod'
-
-const fields = { age: '' }
-
-const { output, errors } = useParse({
-  input: () => fields,
-  schema: () => z.object({ age: z.number() }),
   formatErrors: flatten,
 })
 ```
@@ -991,7 +846,7 @@ const { output, errors } = useParse({
 
 ### `flatten` — error formatter
 
-Converts Standard Schema issues into a flat structure with `root` and `nested` errors. Compatible with both Valibot's and Zod's issue format.
+Converts Standard Schema issues into a flat structure with `root` and `nested` errors.
 
 ```typescript
 import { flatten } from '@jayobado/lolo-ui/form'
@@ -1046,8 +901,6 @@ page.set(2)
 
 #### Conditional fetching
 
-Use `enabled` to control when the query runs:
-
 ```typescript
 import { signal } from '@jayobado/lolo-ui'
 import { useQuery } from '@jayobado/lolo-ui/query'
@@ -1059,7 +912,6 @@ const { data, loading } = useQuery(
   { enabled: () => !!userId.get() },
 )
 
-// Query runs only after userId is set
 userId.set('123')
 ```
 
@@ -1085,7 +937,7 @@ const UserList = defineComponent((_props, ctx) => {
     () => api.users.list({ page: page.get() }),
   )
 
-  const container = div({ styles: { padding: 24 } })
+  const container = div({ class: 'user-list' })
 
   ctx.effect(() => {
     if (loading.get()) {
@@ -1150,7 +1002,7 @@ scope.dispose()
 
 ### `useMutation` — imperative async operations
 
-Wraps any async function with loading, error, and result state. Use for operations triggered by user actions that aren't form submissions — deletes, toggles, reordering, etc.
+Wraps any async function with loading, error, and result state.
 
 ```typescript
 import { useMutation } from '@jayobado/lolo-ui/query'
@@ -1162,51 +1014,6 @@ const { mutate, loading, error, data } = useMutation(
     onError: (err) => { toast.show(err.message) },
   },
 )
-```
-
-#### Usage in a component
-
-```typescript
-import { defineComponent, signal, div, button, span } from '@jayobado/lolo-ui'
-import { useMutation } from '@jayobado/lolo-ui/query'
-
-const DeleteButton = defineComponent<{ userId: string }>((props, ctx) => {
-  const { mutate, loading } = useMutation(
-    (id: string) => api.users.delete({ id }),
-    {
-      onSuccess: () => { window.location.href = '/users' },
-    },
-  )
-
-  const btn = button(null, 'Delete user')
-
-  ctx.effect(() => {
-    btn.textContent = loading.get() ? 'Deleting...' : 'Delete user'
-    ;(btn as HTMLButtonElement).disabled = loading.get()
-  })
-
-  btn.addEventListener('click', () => mutate(props.userId))
-
-  return btn
-})
-```
-
-#### Toggling state
-
-```typescript
-import { useMutation } from '@jayobado/lolo-ui/query'
-
-const project = signal<Project>(initialProject)
-
-const { mutate: toggleArchive, loading } = useMutation(
-  (id: string) => api.projects.toggleArchive({ id }),
-  {
-    onSuccess: (result) => { project.set(result) },
-  },
-)
-
-const btn = button(null, 'Archive')
-btn.addEventListener('click', () => toggleArchive(project.get().id))
 ```
 
 #### Options
@@ -1241,7 +1048,7 @@ btn.addEventListener('click', () => toggleArchive(project.get().id))
 
 ## Components
 
-The `@jayobado/lolo-ui/components` subpath provides low-level helpers that reduce DOM boilerplate without imposing any styling or layout opinions. All components are unstyled by default — use `styles`, `class`, or both to control appearance.
+The `@jayobado/lolo-ui/components` subpath provides render helpers that reduce DOM boilerplate. All are unstyled — pass `class` strings to control appearance.
 
 ```typescript
 import { formField, formGroup, dataTable } from '@jayobado/lolo-ui/components'
@@ -1261,7 +1068,7 @@ formField(
 )
 ```
 
-#### Styled
+#### With error display
 
 ```typescript
 formField(
@@ -1270,15 +1077,11 @@ formField(
     name: 'email',
     error: errors.get()?.nested?.email?.[0],
     required: true,
-    styles: { display: 'flex', flexDirection: 'column', gap: 4 },
-    labelStyles: { fontSize: 14, fontWeight: 600, color: '#ccc' },
-    errorStyles: { fontSize: 12, color: '#ef4444' },
+    class: 'form-field',
+    labelClass: 'form-label',
+    errorClass: 'form-error',
   },
-  input({
-    name: 'email',
-    type: 'email',
-    styles: { padding: '8px 12px', borderRadius: 4, border: '1px solid #333' },
-  }),
+  input({ name: 'email', type: 'email', class: 'form-input' }),
 )
 ```
 
@@ -1291,9 +1094,8 @@ formField(
 | `error` | `string` | Error message to display |
 | `required` | `boolean` | Appends ` *` to label text |
 | `class` | `string` | CSS class on wrapper div |
-| `styles` | `StyleObject` | Atomic CSS on wrapper div |
-| `labelStyles` | `StyleObject` | Atomic CSS on label |
-| `errorStyles` | `StyleObject` | Atomic CSS on error span |
+| `labelClass` | `string` | CSS class on label |
+| `errorClass` | `string` | CSS class on error span |
 
 ### `formGroup` — fieldset + legend
 
@@ -1302,7 +1104,7 @@ import { formGroup, formField } from '@jayobado/lolo-ui/components'
 import { input } from '@jayobado/lolo-ui'
 
 formGroup(
-  { legend: 'Billing address', styles: { border: '1px solid #333', padding: 16, borderRadius: 8 } },
+  { legend: 'Billing address', class: 'field-group' },
   formField({ label: 'Street', name: 'street' }, input({ name: 'street' })),
   formField({ label: 'City', name: 'city' }, input({ name: 'city' })),
   formField({ label: 'Zip', name: 'zip' }, input({ name: 'zip' })),
@@ -1315,8 +1117,7 @@ formGroup(
 |---|---|---|
 | `legend` | `string` | Legend text |
 | `class` | `string` | CSS class on fieldset |
-| `styles` | `StyleObject` | Atomic CSS on fieldset |
-| `legendStyles` | `StyleObject` | Atomic CSS on legend |
+| `legendClass` | `string` | CSS class on legend |
 
 ### `dataTable` — column-driven table
 
@@ -1340,39 +1141,9 @@ const columns: Column<User>[] = [
 dataTable({
   columns,
   rows: users.get(),
+  class: 'data-table',
   onRowClick: (row) => navigateTo(`/users/${row.id}`),
   emptyText: 'No users found',
-})
-```
-
-#### Reactive table
-
-```typescript
-import { defineComponent, signal, div } from '@jayobado/lolo-ui'
-import { useQuery } from '@jayobado/lolo-ui/query'
-import { dataTable } from '@jayobado/lolo-ui/components'
-
-const UserTable = defineComponent((_props, ctx) => {
-  const { data, loading } = useQuery(() => api.users.list({ page: 1 }))
-
-  const columns = [
-    { key: 'name', header: 'Name' },
-    { key: 'role', header: 'Role' },
-  ]
-
-  const container = div(null)
-
-  ctx.effect(() => {
-    if (loading.get()) {
-      container.replaceChildren(div(null, 'Loading...'))
-      return
-    }
-    container.replaceChildren(
-      dataTable({ columns, rows: data.get()?.data ?? [] }),
-    )
-  })
-
-  return container
 })
 ```
 
@@ -1383,8 +1154,8 @@ const UserTable = defineComponent((_props, ctx) => {
 | `key` | `string` | Property name to read from row (used when no `render`) |
 | `header` | `string` | Column header text |
 | `render` | `(row, index) => HTMLElement \| string` | Custom cell renderer |
-| `headerStyles` | `StyleObject` | Atomic CSS on `th` |
-| `cellStyles` | `StyleObject` | Atomic CSS on `td` |
+| `headerClass` | `string` | CSS class on `th` |
+| `cellClass` | `string` | CSS class on `td` |
 
 #### Table props
 
@@ -1393,9 +1164,8 @@ const UserTable = defineComponent((_props, ctx) => {
 | `columns` | `Column<T>[]` | Column definitions (required) |
 | `rows` | `T[]` | Data rows (required) |
 | `class` | `string` | CSS class on `table` |
-| `styles` | `StyleObject` | Atomic CSS on `table` |
-| `headerStyles` | `StyleObject` | Atomic CSS on header `tr` |
-| `rowStyles` | `StyleObject \| (row, index) => StyleObject` | Static or per-row styles |
+| `headerClass` | `string` | CSS class on header `tr` |
+| `rowClass` | `string \| (row, index) => string` | Static or per-row class |
 | `emptyText` | `string` | Text when rows is empty (default: `'No data'`) |
 | `rowKey` | `(row, index) => string \| number` | Key extraction for list rendering |
 | `onRowClick` | `(row, index) => void` | Row click handler |
@@ -1492,9 +1262,7 @@ floatingEl.style.top = `${top}px`
 floatingEl.style.left = `${left}px`
 ```
 
-#### Placement options
-
-`'top'` | `'bottom'` | `'left'` | `'right'` — defaults to `'bottom'`. If the preferred placement doesn't fit, it tries the opposite side, then the remaining two.
+Placement options: `'top'` | `'bottom'` | `'left'` | `'right'` — defaults to `'bottom'`.
 
 ### `useMediaQuery` — reactive media query
 
@@ -1665,19 +1433,14 @@ const { open, close, isOpen } = useModal(
   () => div(null,
     h2(null, 'Are you sure?'),
     p(null, 'This action cannot be undone.'),
-    div({ styles: { display: 'flex', gap: 8, justifyContent: 'flex-end' } },
+    div({ class: 'modal-actions' },
       button({ onClick: close }, 'Cancel'),
       button({ onClick: () => { handleDelete(); close() } }, 'Delete'),
     ),
   ),
   {
-    backdropStyles: {
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    },
-    styles: {
-      background: '#1a1a2e', borderRadius: 8, padding: 24, minWidth: 400,
-    },
+    backdropClass: 'modal-backdrop',
+    class: 'modal-content',
   },
 )
 ```
@@ -1687,9 +1450,7 @@ const { open, close, isOpen } = useModal(
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `class` | `string` | — | CSS class on content wrapper |
-| `styles` | `StyleObject` | — | Atomic CSS on content wrapper |
 | `backdropClass` | `string` | — | CSS class on backdrop |
-| `backdropStyles` | `StyleObject` | — | Atomic CSS on backdrop |
 | `closeOnBackdrop` | `boolean` | `true` | Close when clicking backdrop |
 | `closeOnEscape` | `boolean` | `true` | Close on escape key |
 | `trapFocus` | `boolean` | `true` | Trap tab navigation inside modal |
@@ -1712,15 +1473,12 @@ const { open, close, isOpen } = useModal(
 import { useToaster } from '@jayobado/lolo-ui/hooks'
 
 const toast = useToaster({
-  containerStyles: {
-    position: 'fixed', top: 16, right: 16, zIndex: 9999,
-    display: 'flex', flexDirection: 'column', gap: 8,
-  },
-  variantStyles: {
-    success: { background: '#065f46', color: '#fff', padding: '12px 16px', borderRadius: 6 },
-    error: { background: '#991b1b', color: '#fff', padding: '12px 16px', borderRadius: 6 },
-    info: { background: '#1e3a5f', color: '#fff', padding: '12px 16px', borderRadius: 6 },
-    warning: { background: '#92400e', color: '#fff', padding: '12px 16px', borderRadius: 6 },
+  containerClass: 'toast-container',
+  variantClass: {
+    success: 'toast-success',
+    error: 'toast-error',
+    info: 'toast-info',
+    warning: 'toast-warning',
   },
 })
 
@@ -1736,8 +1494,14 @@ toast.show('Persistent message', { duration: 0 })
 | `duration` | `number` | `3000` | Auto-dismiss delay in ms (`0` = persistent) |
 | `variant` | `ToastVariant` | `'info'` | `'info'` \| `'success'` \| `'warning'` \| `'error'` |
 | `class` | `string` | — | CSS class on toast element |
-| `styles` | `StyleObject` | — | Atomic CSS on toast element |
 | `dismissible` | `boolean` | `true` | Click to dismiss |
+
+#### Toaster options
+
+| Option | Type | Description |
+|---|---|---|
+| `containerClass` | `string` | CSS class on container |
+| `variantClass` | `Record<ToastVariant, string>` | CSS class per variant |
 
 ### `useTooltip` — hover/focus tooltip
 
@@ -1750,10 +1514,7 @@ const btn = button(null, '⚙')
 useTooltip(btn, {
   text: 'Settings',
   placement: 'top',
-  styles: {
-    background: '#333', color: '#fff', padding: '4px 8px',
-    borderRadius: 4, fontSize: 12,
-  },
+  class: 'tooltip',
 })
 ```
 
@@ -1767,7 +1528,6 @@ useTooltip(btn, {
 | `showDelay` | `number` | `200` | Delay before showing in ms |
 | `hideDelay` | `number` | `100` | Delay before hiding in ms |
 | `class` | `string` | — | CSS class on tooltip |
-| `styles` | `StyleObject` | — | Atomic CSS on tooltip |
 
 ### `useDropdown` — accessible dropdown menu
 
@@ -1785,13 +1545,10 @@ const { toggle, isOpen } = useDropdown(btn, {
     { label: 'Delete', onSelect: () => remove() },
   ],
   placement: 'bottom',
-  styles: {
-    background: '#1a1a2e', border: '1px solid #333', borderRadius: 6,
-    minWidth: 160, overflow: 'hidden',
-  },
-  itemStyles: { padding: '8px 12px' },
-  activeItemStyles: { background: '#2a2a3e' },
-  disabledItemStyles: { opacity: 0.4, cursor: 'not-allowed' },
+  class: 'dropdown-menu',
+  itemClass: 'dropdown-item',
+  activeItemClass: 'dropdown-item--active',
+  disabledItemClass: 'dropdown-item--disabled',
 })
 
 btn.addEventListener('click', () => toggle())
@@ -1805,11 +1562,9 @@ btn.addEventListener('click', () => toggle())
 | `placement` | `Placement` | `'bottom'` | Preferred position |
 | `offset` | `number` | `4` | Gap between trigger and menu in px |
 | `class` | `string` | — | CSS class on menu container |
-| `styles` | `StyleObject` | — | Atomic CSS on menu container |
 | `itemClass` | `string` | — | CSS class on each item |
-| `itemStyles` | `StyleObject` | — | Atomic CSS on each item |
-| `activeItemStyles` | `StyleObject` | — | Styles for keyboard/hover active item |
-| `disabledItemStyles` | `StyleObject` | — | Styles for disabled items |
+| `activeItemClass` | `string` | — | CSS class for keyboard/hover active item |
+| `disabledItemClass` | `string` | — | CSS class for disabled items |
 | `onSelect` | `(item) => void` | — | Called when any item is selected |
 
 #### DropdownItem
@@ -1831,24 +1586,6 @@ btn.addEventListener('click', () => toggle())
 | `isOpen` | `Signal<boolean>` | Whether dropdown is open |
 | `dispose` | `() => void` | Close and clean up |
 
-## Project structure
-```
-my-app/
-├── server.ts
-├── deno.json
-└── public/
-    ├── main.ts
-    ├── tokens.ts
-    ├── services/
-    │   └── app.ts
-    └── views/
-        ├── HomeView.ts
-        ├── LoginView.ts
-        └── dashboard/
-            ├── DashboardLayout.ts
-            └── DashboardView.ts
-```
-
 ## Working with kiln
 
 `lolo-ui` is designed to be served by [kiln](https://github.com/jayobado/kiln) (v0.1.8+) which handles TypeScript transpilation, import specifier rewriting, HMR, and deployment builds. kiln reads your `deno.json` import map and `deno.lock`, rewrites bare specifiers like `@jayobado/lolo-ui` to versioned `/jsr/` paths, and serves the transpiled modules from jsr.io on demand.
@@ -1857,14 +1594,9 @@ my-app/
 {
   "imports": {
     "@jayobado/kiln": "jsr:@jayobado/kiln@^0.1.8",
-    "@jayobado/lolo-ui": "jsr:@jayobado/lolo-ui@^0.1.9"
+    "@jayobado/lolo-ui": "jsr:@jayobado/lolo-ui@^0.3.0"
   }
 }
-```
-
-## Versioning
-```bash
-deno run --allow-read --allow-write scripts/bump.ts v0.2.0
 ```
 
 ## License
