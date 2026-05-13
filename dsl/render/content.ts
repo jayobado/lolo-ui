@@ -1,9 +1,10 @@
-import { div, span, p, img } from '../../dom.ts'
-import type { Form, FormHandle } from '../form/mod.ts'
-import type { Alert } from '../alert-notification/mod.ts'
-import type { Block } from '../block/mod.ts'
-import type { PanelContent } from '../content.ts'
-import { reactiveText, reactiveAttr } from './reactive.ts'
+import { div, span, p, img } from "../../dom.ts"
+import type { ImgProps } from "../../dom.ts"
+import type { Form, FormHandle } from "../form/mod.ts"
+import type { Alert } from "../alert-notification/mod.ts"
+import type { Block } from "../block/mod.ts"
+import type { PanelContent } from "../content.ts"
+import { reactiveText, reactiveAttr } from "./reactive.ts"
 
 export function createContentRenderer(
 	renderForm: (form: Form, options?: { onReady?: (handle: FormHandle) => void }) => HTMLElement,
@@ -59,7 +60,7 @@ export function createContentRenderer(
 					if (image.width) props.width = image.width
 					if (image.height) props.height = image.height
 					if (typeof image.src === 'string') props.src = image.src
-					const el = img(props as any)
+					const el = img(props as ImgProps)
 					if (typeof image.src === 'function') {
 						reactiveAttr(el, 'src', image.src)
 					}
