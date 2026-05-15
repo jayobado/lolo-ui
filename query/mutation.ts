@@ -1,6 +1,6 @@
-import { signal } from '../signals.ts'
-import { resolveScope } from '../scope.ts'
-import type { Scope } from '../scope.ts'
+import { signal } from '../core/signals.ts'
+import { resolveScope } from '../core/scope.ts'
+import type { Scope } from '../core/scope.ts'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -13,13 +13,13 @@ export interface MutationOptions<TResult> {
 }
 
 export interface MutationReturn<TArgs extends unknown[], TResult> {
-	mutate: (...args: TArgs) => Promise<TResult | undefined>
+	mutate: (...args: TArgs) => Promise<TResult>
 	data: { get: () => TResult | undefined }
 	error: { get: () => Error | undefined }
 	loading: { get: () => boolean }
 	reset: () => void
-	dispose: () => void
 }
+
 
 // ─── Implementation ──────────────────────────────────────────────────────────
 
@@ -37,8 +37,10 @@ export function useMutation<TArgs extends unknown[], TResult>(
 	const maxRetries = options?.retry ?? 0
 	const retryDelay = options?.retryDelay ?? 1000
 
-	async function mutate(...args: TArgs): Promise<TResult | undefined> {
-		if (loading.get()) return
+	async function mutate(...args: TArgs): Promise<TResult> {
+		if (loading.get()) {
+			throw new Error('[useMutation] mutate called while a previous mutation is in flight')
+		}
 
 		error.set(undefined)
 		loading.set(true)
@@ -61,7 +63,7 @@ export function useMutation<TArgs extends unknown[], TResult>(
 					}
 					error.set(e)
 					await options?.onError?.(e)
-					return undefined
+					throw e
 				}
 			}
 		} finally {
@@ -76,11 +78,7 @@ export function useMutation<TArgs extends unknown[], TResult>(
 		loading.set(false)
 	}
 
-	function dispose(): void {
-		reset()
-	}
+	s?.onCleanup(reset)
 
-	s?.onCleanup(dispose)
-
-	return { mutate, data, error, loading, reset, dispose }
+	return { mutate, data, error, loading, reset }
 }

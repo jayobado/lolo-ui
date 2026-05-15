@@ -1,4 +1,4 @@
-import { signal, computed } from '../signals.ts'
+import { signal, computed } from '../core/signals.ts'
 
 export interface SelectionReturn<T> {
 	selected: { get: () => Set<T> }

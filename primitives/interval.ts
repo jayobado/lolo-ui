@@ -1,5 +1,5 @@
-import { resolveScope } from '../scope.ts'
-import type { Scope } from '../scope.ts'
+import { resolveScope } from '../core/scope.ts'
+import type { Scope } from '../core/scope.ts'
 
 export interface IntervalReturn {
 	stop: () => void

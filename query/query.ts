@@ -1,6 +1,6 @@
-import { signal, effect } from '../signals.ts'
-import { resolveScope } from '../scope.ts'
-import type { Scope } from '../scope.ts'
+import { signal, effect } from '../core/signals.ts'
+import { resolveScope } from '../core/scope.ts'
+import type { Scope } from '../core/scope.ts'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -16,12 +16,15 @@ export interface QueryReturn<T> {
 	error: { get: () => Error | undefined }
 	loading: { get: () => boolean }
 	refetch: () => Promise<void>
-	dispose: () => void
 }
 
 // ─── Implementation ──────────────────────────────────────────────────────────
 
-export function useQuery<T>(fn: () => Promise<T>, options?: QueryOptions, scope?: Scope): QueryReturn<T> {
+export function useQuery<T>(
+	fn: () => Promise<T>,
+	options?: QueryOptions,
+	scope?: Scope,
+): QueryReturn<T> {
 	const s = resolveScope(scope)
 
 	const data = signal<T | undefined>(undefined)
@@ -74,5 +77,5 @@ export function useQuery<T>(fn: () => Promise<T>, options?: QueryOptions, scope?
 
 	s?.onCleanup(dispose)
 
-	return { data, error, loading, refetch: execute, dispose }
+	return { data, error, loading, refetch: execute }
 }

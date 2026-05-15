@@ -1,5 +1,5 @@
-import { signal, computed } from '../signals.ts'
-import type { Signal } from '../signals.ts'
+import { signal, computed } from '../core/signals.ts'
+import type { Signal } from '../core/signals.ts'
 
 export interface PaginationOptions {
 	page?: number

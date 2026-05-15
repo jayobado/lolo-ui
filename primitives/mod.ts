@@ -5,9 +5,6 @@ export { useEscapeKey } from './escape-key.ts'
 export { useFocusTrap } from './focus-trap.ts'
 export { useScrollLock } from './scroll-lock.ts'
 
-export { computePosition } from './position.ts'
-export type { Placement, PositionOptions } from './position.ts'
-
 export { useMediaQuery } from './media-query.ts'
 export type { MediaQueryReturn } from './media-query.ts'
 
@@ -30,3 +27,9 @@ export type { SelectionReturn } from './selection.ts'
 
 export { useClipboard } from './clipboard.ts'
 export type { ClipboardReturn } from './clipboard.ts'
+
+export { toast, configureToasts } from './toast.ts'
+export type { ToastVariant, ToastOptions, ToastConfig } from './toast.ts'
+
+export { enableTooltips } from './tooltip.ts'
+export type { TooltipConfig } from './tooltip.ts'

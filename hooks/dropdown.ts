@@ -1,11 +1,11 @@
-import { signal } from '../signals.ts'
-import { resolveScope } from '../scope.ts'
-import type { Scope } from '../scope.ts'
+import { signal } from '../core/signals.ts'
+import { resolveScope } from '../core/scope.ts'
+import type { Scope } from '../core/scope.ts'
 import { createPortal } from '../primitives/portal.ts'
 import { useClickOutside } from '../primitives/click-outside.ts'
 import { useEscapeKey } from '../primitives/escape-key.ts'
-import { computePosition } from '../primitives/position.ts'
-import type { Placement } from '../primitives/position.ts'
+
+export type DropdownPlacement = 'bottom'
 
 export interface DropdownItem {
 	label: string
@@ -16,7 +16,7 @@ export interface DropdownItem {
 
 export interface DropdownOptions {
 	items: DropdownItem[]
-	placement?: Placement
+	placement?: DropdownPlacement
 	offset?: number
 	class?: string
 	itemClass?: string
@@ -33,6 +33,35 @@ export interface DropdownReturn {
 	dispose: () => void
 }
 
+// ─── Positioning ──────────────────────────────────────────────────────────
+
+function placeBelow(
+	trigger: HTMLElement,
+	menu: HTMLElement,
+	offset: number,
+): { top: number; left: number } {
+	const t = trigger.getBoundingClientRect()
+	const m = menu.getBoundingClientRect()
+	const viewportH = globalThis.innerHeight
+	const viewportW = globalThis.innerWidth
+
+	// Vertical: prefer below; flip up if not enough room and more space above
+	const spaceBelow = viewportH - t.bottom
+	const spaceAbove = t.top
+	const flipUp = spaceBelow < m.height + offset && spaceAbove > spaceBelow
+
+	const top = flipUp
+		? Math.max(0, t.top - m.height - offset)
+		: t.bottom + offset
+
+	// Horizontal: align to trigger's left edge, clamp to viewport
+	const left = Math.max(0, Math.min(t.left, viewportW - m.width))
+
+	return { top, left }
+}
+
+// ─── useDropdown ──────────────────────────────────────────────────────────
+
 export function useDropdown(
 	trigger: HTMLElement,
 	options: DropdownOptions,
@@ -42,7 +71,7 @@ export function useDropdown(
 	const isOpen = signal(false)
 	const {
 		items,
-		placement = 'bottom',
+		placement: _placement = 'bottom',
 		offset = 4,
 	} = options
 
@@ -127,14 +156,18 @@ export function useDropdown(
 			case 'ArrowDown': {
 				e.preventDefault()
 				const currentPos = selectable.indexOf(activeIndex)
-				const next = currentPos < selectable.length - 1 ? selectable[currentPos + 1] : selectable[0]
+				const next = currentPos < selectable.length - 1
+					? selectable[currentPos + 1]
+					: selectable[0]
 				updateActive(next)
 				break
 			}
 			case 'ArrowUp': {
 				e.preventDefault()
 				const currentPos = selectable.indexOf(activeIndex)
-				const prev = currentPos > 0 ? selectable[currentPos - 1] : selectable[selectable.length - 1]
+				const prev = currentPos > 0
+					? selectable[currentPos - 1]
+					: selectable[selectable.length - 1]
 				updateActive(prev)
 				break
 			}
@@ -154,7 +187,7 @@ export function useDropdown(
 		menu = createMenu()
 		portal = createPortal(menu)
 
-		const pos = computePosition(trigger, menu, { placement, offset })
+		const pos = placeBelow(trigger, menu, offset)
 		menu.style.top = `${pos.top}px`
 		menu.style.left = `${pos.left}px`
 

@@ -1,6 +1,6 @@
-import { signal } from '../signals.ts'
-import { resolveScope } from '../scope.ts'
-import type { Scope } from '../scope.ts'
+import { signal } from '../core/signals.ts'
+import { resolveScope } from '../core/scope.ts'
+import type { Scope } from '../core/scope.ts'
 
 export interface LocalStorageReturn<T> {
 	value: { get: () => T; set: (v: T) => void }
