@@ -10,6 +10,10 @@ export type {
 	Checkbox,
 	Radio,
 	Button,
+	ArrayNode,
+	Step,
+	StepsContext,
+	Steps,
 	ValidationRule,
 	ClassValue,
 } from './types.ts'

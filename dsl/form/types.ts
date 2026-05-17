@@ -76,12 +76,94 @@ export interface Button<TState extends Record<string, unknown> = Record<string, 
 	onClick?: (state: TState) => void
 }
 
+export interface ArrayColumn<TRow extends Record<string, unknown>> {
+	header: string
+	field: FormChild<TRow>
+	class?: ClassValue
+	headerClass?: ClassValue
+	cellClass?: ClassValue
+}
+
+export interface ArrayNode
+	<TState extends Record<string, unknown> = Record<string, unknown>, 
+		TRow extends Record<string, unknown> = Record<string, unknown>> {
+	node: 'array'
+	name: keyof TState & string
+
+	rowKey: (row: TRow) => string
+	columns: readonly ArrayColumn<TRow>[]
+
+	class?: ClassValue
+	rowClass?: ClassValue
+	cellClass?: ClassValue
+	headerClass?: ClassValue
+
+	allowAdd?: boolean
+	addLabel?: string
+	addClass?: ClassValue
+	newRow?: () => TRow
+
+	allowRemove?: boolean
+	removeLabel?: string
+	removeClass?: ClassValue
+
+	// Slots
+	addSlot?: (ctx: { onAdd: () => void }) => HTMLElement
+	removeSlot?: (ctx: { onRemove: () => void; row: TRow; rowIndex: number }) => HTMLElement
+	emptySlot?: () => HTMLElement
+}
+
+export interface Step<TState extends Record<string, unknown> = Record<string, unknown>> {
+	label?: string
+	fields: readonly FormChild<TState>[]
+}
+
+export interface StepsContext<TState extends Record<string, unknown> = Record<string, unknown>> {
+	currentStep: () => number
+	totalSteps: number
+	steps: readonly Step<TState>[]
+
+	isFirst: () => boolean
+	isLast: () => boolean
+
+	isStepCurrent: (step: number) => boolean
+	isStepCompleted: (step: number) => boolean
+	isStepReachable: (step: number) => boolean
+
+	labels: {
+		next: string
+		prev: string
+		submit: string
+	}
+
+	next: () => Promise<void>
+	prev: () => void
+	goTo: (step: number) => Promise<void>
+	submit: () => Promise<void>
+}
+
+export interface Steps<TState extends Record<string, unknown> = Record<string, unknown>> {
+	node: 'steps'
+	steps: readonly Step<TState>[]
+	currentStepRef?: Signal<number>
+	class?: ClassValue
+	stepClass?: ClassValue
+	nextLabel?: string
+	prevLabel?: string
+	submitLabel?: string
+
+	indicatorSlot?: (ctx: StepsContext<TState>) => HTMLElement
+	navSlot?: (ctx: StepsContext<TState>) => HTMLElement
+}
+
 export type FormChild<TState extends Record<string, unknown> = Record<string, unknown>> =
 	| Input<TState>
 	| Select<TState>
 	| Textarea<TState>
 	| Checkbox<TState>
 	| Radio<TState>
+	| ArrayNode<TState>
+	| Steps<TState>
 	| Button<TState>
 
 export interface FormController {
@@ -106,3 +188,4 @@ export interface Form<TState extends Record<string, unknown> = Record<string, un
 
 	children: readonly FormChild<TState>[]
 }
+

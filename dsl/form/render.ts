@@ -13,15 +13,21 @@ import type {
 	Radio,
 	Select,
 	Textarea,
+	ArrayNode,
+	Steps,
 	ValidationRule
 } from './types.ts'
+import type { FieldContext, FieldRuleSet } from './context.ts'
 import {
 	validateWithRules,
 	validateWithSchema,
 	validateFieldWithRules,
 	validateFieldWithSchema,
-	type FieldRuleSet,
 } from './validate.ts'
+import { buildArray } from './array.ts'
+import { buildSteps } from './steps.ts'
+
+export type { FieldContext, FieldRuleSet } from './context.ts'
 
 const scopeMap = new WeakMap<HTMLElement, Scope>()
 
@@ -31,10 +37,13 @@ function applyClass(el: HTMLElement, value: ClassValue): void {
 	if (cls) el.className = cls
 }
 
-function isFieldNode(
-	child: FormChild,
-): child is Exclude<FormChild, Button> {
-	return child.node !== 'button'
+function applyClassAdd(el: HTMLElement, value: ClassValue, baseClass: string): void {
+	el.classList.add(baseClass)
+	if (!value) return
+	const extra = Array.isArray(value) ? value : [value]
+	for (const part of extra.flatMap(s => s.split(/\s+/))) {
+		if (part) el.classList.add(part)
+	}
 }
 
 function resolveDisabled(
@@ -44,6 +53,7 @@ function resolveDisabled(
 	if (typeof disabled === 'function') return disabled(state)
 	return disabled === true
 }
+
 export function createFormController(): FormController {
 	return {
 		submit: () => { },
@@ -57,15 +67,33 @@ export function defineForm<TState extends Record<string, unknown>>(
 	return node
 }
 
-interface FieldContext {
-	state: Signal<Record<string, unknown>>
-	errors: Signal<Record<string, string>>
-	onBlur: (fieldName: string) => void
-	onChange: (fieldName: string) => void
-	scope: Scope
+function registerFieldRules(
+	node: { name: string; required?: boolean; rules?: ValidationRule[] },
+	ctx: FieldContext,
+): void {
+	if (!node.required && (!node.rules || node.rules.length === 0)) return
+	const localName = node.name
+	ctx.registerRule({
+		name: localName,
+		rules: (node.rules ?? []) as unknown as ValidationRule[],
+		isRequired: node.required === true,
+		getValue: () => ctx.state.get()[localName],
+	})
+}
+
+function coerceInputValue(
+	raw: string,
+	type?: Input<Record<string, unknown>>['type'],
+): unknown {
+	if (type !== 'number' && type !== 'range') return raw
+	if (raw === '') return null
+	const n = Number(raw)
+	return Number.isNaN(n) ? null : n
 }
 
 function buildInput(node: Input<Record<string, unknown>>, ctx: FieldContext): HTMLElement {
+	registerFieldRules(node, ctx)
+
 	const wrapper = document.createElement('label')
 	applyClass(wrapper, node.class)
 
@@ -77,7 +105,7 @@ function buildInput(node: Input<Record<string, unknown>>, ctx: FieldContext): HT
 
 	const input = document.createElement('input')
 	input.type = node.type ?? 'text'
-	input.name = node.name
+	input.name = ctx.keyPrefix + node.name
 	if (node.placeholder) input.placeholder = node.placeholder
 	if (node.autocomplete) input.autocomplete = node.autocomplete
 	if (node.required) input.required = true
@@ -86,7 +114,8 @@ function buildInput(node: Input<Record<string, unknown>>, ctx: FieldContext): HT
 	input.value = String(ctx.state.get()[node.name] ?? '')
 
 	input.addEventListener('input', () => {
-		ctx.state.update((s) => ({ ...s, [node.name]: input.value }))
+		const value = coerceInputValue(input.value, node.type)
+		ctx.state.update((s) => ({ ...s, [node.name]: value }))
 		ctx.onChange(node.name)
 	})
 
@@ -118,6 +147,8 @@ function buildInput(node: Input<Record<string, unknown>>, ctx: FieldContext): HT
 }
 
 function buildSelect(node: Select<Record<string, unknown>>, ctx: FieldContext): HTMLElement {
+	registerFieldRules(node, ctx)
+
 	const wrapper = document.createElement('label')
 	applyClass(wrapper, node.class)
 
@@ -128,7 +159,7 @@ function buildSelect(node: Select<Record<string, unknown>>, ctx: FieldContext): 
 	}
 
 	const select = document.createElement('select')
-	select.name = node.name
+	select.name = ctx.keyPrefix + node.name
 	if (node.required) select.required = true
 	applyClass(select, node.inputClass)
 
@@ -183,6 +214,8 @@ function buildSelect(node: Select<Record<string, unknown>>, ctx: FieldContext): 
 }
 
 function buildTextarea(node: Textarea<Record<string, unknown>>, ctx: FieldContext): HTMLElement {
+	registerFieldRules(node, ctx)
+
 	const wrapper = document.createElement('label')
 	applyClass(wrapper, node.class)
 
@@ -193,7 +226,7 @@ function buildTextarea(node: Textarea<Record<string, unknown>>, ctx: FieldContex
 	}
 
 	const textarea = document.createElement('textarea')
-	textarea.name = node.name
+	textarea.name = ctx.keyPrefix + node.name
 	if (node.placeholder) textarea.placeholder = node.placeholder
 	if (node.rows) textarea.rows = node.rows
 	if (node.required) textarea.required = true
@@ -233,12 +266,14 @@ function buildTextarea(node: Textarea<Record<string, unknown>>, ctx: FieldContex
 }
 
 function buildCheckbox(node: Checkbox<Record<string, unknown>>, ctx: FieldContext): HTMLElement {
+	registerFieldRules(node, ctx)
+
 	const wrapper = document.createElement('label')
 	applyClass(wrapper, node.class)
 
 	const input = document.createElement('input')
 	input.type = 'checkbox'
-	input.name = node.name
+	input.name = ctx.keyPrefix + node.name
 	if (node.required) input.required = true
 	applyClass(input, node.inputClass)
 
@@ -282,6 +317,8 @@ function buildCheckbox(node: Checkbox<Record<string, unknown>>, ctx: FieldContex
 }
 
 function buildRadio(node: Radio<Record<string, unknown>>, ctx: FieldContext): HTMLElement {
+	registerFieldRules(node, ctx)
+
 	const wrapper = document.createElement('fieldset')
 	applyClass(wrapper, node.class)
 
@@ -299,7 +336,7 @@ function buildRadio(node: Radio<Record<string, unknown>>, ctx: FieldContext): HT
 
 		const input = document.createElement('input')
 		input.type = 'radio'
-		input.name = node.name
+		input.name = ctx.keyPrefix + node.name
 		input.value = opt.value
 		if (node.required) input.required = true
 		if (opt.disabled) input.disabled = true
@@ -351,8 +388,7 @@ function buildRadio(node: Radio<Record<string, unknown>>, ctx: FieldContext): HT
 
 function buildButton(
 	node: Button<Record<string, unknown>>,
-	state: Signal<Record<string, unknown>>,
-	scope: Scope,
+	ctx: FieldContext,
 ): HTMLElement {
 	const btn = document.createElement('button')
 	btn.type = node.action ?? 'button'
@@ -360,16 +396,36 @@ function buildButton(
 	applyClass(btn, node.class)
 
 	if (node.onClick) {
-		btn.addEventListener('click', () => node.onClick!(state.get()))
+		btn.addEventListener('click', () => node.onClick!(ctx.state.get()))
 	}
 
 	if (node.disabled !== undefined) {
-		scope.effect(() => {
-			btn.disabled = resolveDisabled(node.disabled, state.get())
+		ctx.scope.effect(() => {
+			btn.disabled = resolveDisabled(node.disabled, ctx.state.get())
 		})
 	}
 
 	return btn
+}
+
+export function dispatchField(
+	child: FormChild,
+	ctx: FieldContext,
+): HTMLElement {
+	switch (child.node) {
+		case 'input': return buildInput(child as Input<Record<string, unknown>>, ctx)
+		case 'select': return buildSelect(child as Select<Record<string, unknown>>, ctx)
+		case 'textarea': return buildTextarea(child as Textarea<Record<string, unknown>>, ctx)
+		case 'checkbox': return buildCheckbox(child as Checkbox<Record<string, unknown>>, ctx)
+		case 'radio': return buildRadio(child as Radio<Record<string, unknown>>, ctx)
+		case 'array': return buildArray(child as ArrayNode, ctx, dispatchField)
+		case 'steps': return buildSteps(child as Steps, ctx, dispatchField)
+		case 'button': return buildButton(child as Button<Record<string, unknown>>, ctx)
+		default: {
+			const _exhaustive: never = child
+			throw new Error('[dsl] Unknown form child type')
+		}
+	}
 }
 
 function build(
@@ -386,31 +442,39 @@ function build(
 	const validateOn = node.validateOn ?? 'submit'
 	const hasSchema = !!node.schema
 
-	const fieldRuleSets: FieldRuleSet[] = node.children
-		.filter(isFieldNode)
-		.map((f) => ({
-			name: f.name,
-			rules: (f.rules ?? []) as unknown as ValidationRule[],
-			isRequired: f.required === true,
-		}))
+	const fieldRuleSets: FieldRuleSet[] = []
 
-	async function validateField(fieldName: string): Promise<void> {
+	function registerRule(set: FieldRuleSet): void {
+		const existing = fieldRuleSets.findIndex(r => r.name === set.name)
+		if (existing >= 0) fieldRuleSets[existing] = set
+		else fieldRuleSets.push(set)
+	}
+
+	async function validateField(fieldKey: string): Promise<void> {
 		let error: string | null
 
 		if (hasSchema) {
-			error = await validateFieldWithSchema(state.get(), node.schema!, fieldName)
+			error = await validateFieldWithSchema(state.get(), node.schema!, fieldKey)
 		} else {
-			const set = fieldRuleSets.find(s => s.name === fieldName)
+			const set = fieldRuleSets.find(s => s.name === fieldKey)
 			if (!set) return
-			error = validateFieldWithRules(state.get(), fieldName, set.rules, set.isRequired)
+			error = validateFieldWithRules(
+				state.get(), set.rules, set.isRequired, set.getValue,
+			)
 		}
 
 		errors.update((prev) => {
 			const next = { ...prev }
-			if (error) next[fieldName] = error
-			else delete next[fieldName]
+			if (error) next[fieldKey] = error
+			else delete next[fieldKey]
 			return next
 		})
+	}
+
+	async function validateFields(keys: readonly string[]): Promise<boolean> {
+		await Promise.all(keys.map(k => validateField(k)))
+		const after = errors.get()
+		return keys.every(k => !after[k])
 	}
 
 	async function validateAll(): Promise<boolean> {
@@ -435,7 +499,7 @@ function build(
 	}
 
 	const formEl = document.createElement('form')
-	applyClass(formEl, node.class)
+	applyClassAdd(formEl, node.class, 'lolo-form')
 	formEl.noValidate = true
 
 	formEl.addEventListener('submit', (e) => {
@@ -452,25 +516,15 @@ function build(
 		state,
 		errors,
 		scope,
-		onBlur: (name) => { if (validateOn === 'blur') validateField(name) },
-		onChange: (name) => { if (validateOn === 'change') validateField(name) },
+		keyPrefix: '',
+		onBlur: (key) => { if (validateOn === 'blur') validateField(key) },
+		onChange: (key) => { if (validateOn === 'change') validateField(key) },
+		registerRule,
+		validateFields,
 	}
 
 	for (const child of node.children) {
-		let el: HTMLElement
-		switch (child.node) {
-			case 'input': el = buildInput(child, fieldCtx); break
-			case 'select': el = buildSelect(child, fieldCtx); break
-			case 'textarea': el = buildTextarea(child, fieldCtx); break
-			case 'checkbox': el = buildCheckbox(child, fieldCtx); break
-			case 'radio': el = buildRadio(child, fieldCtx); break
-			case 'button': el = buildButton(child, state, scope); break
-			default: {
-				const _exhaustive: never = child
-				throw new Error('[dsl] Unknown form child type')
-			}
-		}
-		formEl.appendChild(el)
+		formEl.appendChild(dispatchField(child, fieldCtx))
 	}
 
 	if (node.controller) {

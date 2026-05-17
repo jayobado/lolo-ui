@@ -14,7 +14,7 @@
 	},
 
 	"tasks": {
-		"check": "deno check mod.ts form/mod.ts query/mod.ts primitives/mod.ts dsl/mod.ts"
+		"check": "deno check mod.ts query/mod.ts primitives/mod.ts dsl/mod.ts"
 	},
 
 	"compilerOptions": {

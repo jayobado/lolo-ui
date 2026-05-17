@@ -1,6 +1,8 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type { ValidationRule } from './types.ts'
+import type { FieldRuleSet } from './context.ts'
 
+export type { FieldRuleSet }
 
 export const required = <TState extends Record<string, unknown> = Record<string, unknown>>(
 	message = 'Required',
@@ -16,11 +18,6 @@ export const custom = <TState extends Record<string, unknown> = Record<string, u
 
 // ─── Internal validation (non-generic, operates on untyped Record) ────────
 
-export interface FieldRuleSet {
-	name: string
-	rules: ValidationRule[]
-	isRequired: boolean
-}
 
 export function validateWithRules(
 	state: Record<string, unknown>,
@@ -44,12 +41,12 @@ export function validateWithRules(
 }
 
 export function validateFieldWithRules(
-	state: Record<string, unknown>,
-	fieldName: string,
-	rules: ValidationRule[],
+	state:      Record<string, unknown>,
+	rules:      ValidationRule[],
 	isRequired: boolean,
+	getValue:   (state: Record<string, unknown>) => unknown,
 ): string | null {
-	const value = state[fieldName]
+	const value = getValue(state)
 	const allRules: ValidationRule[] = isRequired ? [required(), ...rules] : rules
 
 	for (const rule of allRules) {
@@ -76,13 +73,12 @@ export async function validateWithSchema(
 		const path = issue.path ?? []
 		if (path.length === 0) continue
 
-		const first = path[0]
-		const fieldName = typeof first === 'object' && first !== null
-			? String(first.key)
-			: String(first)
+		const fieldKey = path.map((p) =>
+			typeof p === 'object' && p !== null ? String(p.key) : String(p)
+		).join('.')
 
-		if (!(fieldName in errors)) {
-			errors[fieldName] = issue.message
+		if (!(fieldKey in errors)) {
+			errors[fieldKey] = issue.message
 		}
 	}
 
