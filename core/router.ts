@@ -1,6 +1,5 @@
-// router.ts
-
 import { disposeContainer } from './container.ts'
+import { signal } from './signals.ts'
 import type { Container } from './container.ts'
 import type {
 	GuardFn,
@@ -33,6 +32,28 @@ export interface LayoutRoute extends RouteBase {
 }
 
 export type RouteDefinition = RedirectRoute | ContainerRoute | LayoutRoute
+
+// ─── Reactive current route ───────────────────────────────────────────────────
+
+const currentPathSignal = signal<string>(globalThis.location?.pathname ?? '/')
+const currentRouteContextSignal = signal<RouteContext | null>(null)
+
+/**
+ * The current pathname. Updates whenever the router renders a new route.
+ * Read-only view of the underlying signal.
+ */
+export const currentPath: { get: () => string } = {
+	get: currentPathSignal.get,
+}
+
+/**
+ * The current RouteContext (path + params + query). Updates whenever the
+ * router renders a new route. Null before the first render.
+ * Read-only view of the underlying signal.
+ */
+export const currentRouteContext: { get: () => RouteContext | null } = {
+	get: currentRouteContextSignal.get,
+}
 
 function pathToRegex(path: string): RegExp {
 	const pattern = path
@@ -203,6 +224,9 @@ export function createRouter(options: RouterOptions): Router {
 
 			outlet.appendChild(viewEl)
 			currentEl = viewEl
+
+			currentPathSignal.set(pathname)
+			currentRouteContextSignal.set(context)
 
 			if (matched && isContainer(matched.route) && matched.route.container.route?.title) {
 				const title = matched.route.container.route.title
