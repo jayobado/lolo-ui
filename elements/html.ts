@@ -1,4 +1,5 @@
 import { defineElement } from '../core/element.ts'
+import type { ElementFn } from '../core/element.ts'
 import type {
 	AnchorProps,
 	AreaProps,
@@ -44,19 +45,149 @@ import type {
 } from './dom-types.ts'
 
 /**
+ * Type of the `el` namespace. Explicit so JSR's slow-types check can
+ * resolve the public API without re-running inference at install time.
+ */
+export interface ElNamespace {
+	// Sectioning and structure
+	readonly div: ElementFn<ElementProps>
+	readonly span: ElementFn<ElementProps>
+	readonly section: ElementFn<ElementProps>
+	readonly header: ElementFn<ElementProps>
+	readonly footer: ElementFn<ElementProps>
+	readonly main: ElementFn<ElementProps>
+	readonly nav: ElementFn<ElementProps>
+	readonly article: ElementFn<ElementProps>
+	readonly aside: ElementFn<ElementProps>
+	readonly address: ElementFn<ElementProps>
+	readonly hgroup: ElementFn<ElementProps>
+	readonly search: ElementFn<ElementProps>
+
+	// Headings
+	readonly h1: ElementFn<ElementProps>
+	readonly h2: ElementFn<ElementProps>
+	readonly h3: ElementFn<ElementProps>
+	readonly h4: ElementFn<ElementProps>
+	readonly h5: ElementFn<ElementProps>
+	readonly h6: ElementFn<ElementProps>
+
+	// Text content
+	readonly p: ElementFn<ElementProps>
+	readonly pre: ElementFn<ElementProps>
+	readonly blockquote: ElementFn<BlockquoteProps>
+	readonly q: ElementFn<QuoteProps>
+	readonly cite: ElementFn<ElementProps>
+	readonly hr: ElementFn<ElementProps>
+	readonly br: ElementFn<ElementProps>
+	readonly wbr: ElementFn<ElementProps>
+
+	// Inline text semantics
+	readonly a: ElementFn<AnchorProps>
+	readonly strong: ElementFn<ElementProps>
+	readonly em: ElementFn<ElementProps>
+	readonly mark: ElementFn<ElementProps>
+	readonly small: ElementFn<ElementProps>
+	readonly sub: ElementFn<ElementProps>
+	readonly sup: ElementFn<ElementProps>
+	readonly abbr: ElementFn<ElementProps>
+	readonly dfn: ElementFn<ElementProps>
+	readonly i: ElementFn<ElementProps>
+	readonly b: ElementFn<ElementProps>
+	readonly u: ElementFn<ElementProps>
+	readonly s: ElementFn<ElementProps>
+	readonly kbd: ElementFn<ElementProps>
+	readonly samp: ElementFn<ElementProps>
+	readonly variable: ElementFn<ElementProps>
+	readonly time: ElementFn<TimeProps>
+	readonly data: ElementFn<DataProps>
+	readonly code: ElementFn<ElementProps>
+	readonly bdi: ElementFn<ElementProps>
+	readonly bdo: ElementFn<ElementProps>
+	readonly ruby: ElementFn<ElementProps>
+	readonly rp: ElementFn<ElementProps>
+	readonly rt: ElementFn<ElementProps>
+
+	// Edits
+	readonly ins: ElementFn<InsDelProps>
+	readonly del: ElementFn<InsDelProps>
+
+	// Embedded content
+	readonly img: ElementFn<ImgProps>
+	readonly picture: ElementFn<ElementProps>
+	readonly video: ElementFn<VideoProps>
+	readonly audio: ElementFn<AudioProps>
+	readonly source: ElementFn<SourceProps>
+	readonly track: ElementFn<TrackProps>
+	readonly iframe: ElementFn<IframeProps>
+	readonly embed: ElementFn<EmbedProps>
+	readonly object: ElementFn<ObjectProps>
+	readonly canvas: ElementFn<CanvasProps>
+	readonly map: ElementFn<MapProps>
+	readonly area: ElementFn<AreaProps>
+
+	// Forms
+	readonly form: ElementFn<FormProps>
+	readonly fieldset: ElementFn<FieldsetProps>
+	readonly legend: ElementFn<ElementProps>
+	readonly label: ElementFn<LabelProps>
+	readonly input: ElementFn<InputProps>
+	readonly textarea: ElementFn<TextareaProps>
+	readonly select: ElementFn<SelectProps>
+	readonly option: ElementFn<OptionProps>
+	readonly optgroup: ElementFn<OptgroupProps>
+	readonly button: ElementFn<ButtonProps>
+	readonly output: ElementFn<OutputProps>
+	readonly meter: ElementFn<MeterProps>
+	readonly progress: ElementFn<ProgressProps>
+	readonly datalist: ElementFn<ElementProps>
+
+	// Lists
+	readonly ul: ElementFn<ElementProps>
+	readonly ol: ElementFn<ElementProps>
+	readonly li: ElementFn<ElementProps>
+	readonly dl: ElementFn<ElementProps>
+	readonly dt: ElementFn<ElementProps>
+	readonly dd: ElementFn<ElementProps>
+	readonly menu: ElementFn<ElementProps>
+
+	// Tables
+	readonly table: ElementFn<ElementProps>
+	readonly thead: ElementFn<ElementProps>
+	readonly tbody: ElementFn<ElementProps>
+	readonly tfoot: ElementFn<ElementProps>
+	readonly tr: ElementFn<ElementProps>
+	readonly th: ElementFn<ThProps>
+	readonly td: ElementFn<TableCellProps>
+	readonly caption: ElementFn<ElementProps>
+	readonly col: ElementFn<ColProps>
+	readonly colgroup: ElementFn<ColgroupProps>
+
+	// Interactive
+	readonly details: ElementFn<DetailsProps>
+	readonly summary: ElementFn<ElementProps>
+	readonly dialog: ElementFn<DialogProps>
+
+	// Code and templating
+	readonly template: ElementFn<ElementProps>
+	readonly slot: ElementFn<ElementProps>
+
+	// Document metadata
+	readonly link: ElementFn<LinkProps>
+	readonly meta: ElementFn<MetaProps>
+	readonly base: ElementFn<BaseProps>
+	readonly script: ElementFn<ScriptProps>
+	readonly noscript: ElementFn<ElementProps>
+	readonly style: ElementFn<StyleProps>
+	readonly title: ElementFn<ElementProps>
+}
+
+/**
  * The `el` namespace — every HTML element as a typed factory.
  *
- * Usage:
- *   import { el } from '@jayobado/lolo-ui'
- *   const { div, button, h2 } = el
- *   div({ class: 'card' }, h2('Title'), button({}, 'OK'))
- *
- * Per-element prop types give type-safe attributes — `button({ type:
- * 'submit' })` autocompletes and rejects invalid values; `a({ href:
- * '/x' })` works while `a({ src: '/x' })` errors.
+ * (existing docstring continues...)
  */
-export const el = {
-	// ─── Sectioning and structure ─────────────────────────────────────
+export const el: ElNamespace = {
+	// Sectioning and structure
 	div: defineElement<ElementProps>('div'),
 	span: defineElement<ElementProps>('span'),
 	section: defineElement<ElementProps>('section'),
@@ -70,7 +201,7 @@ export const el = {
 	hgroup: defineElement<ElementProps>('hgroup'),
 	search: defineElement<ElementProps>('search'),
 
-	// ─── Headings ─────────────────────────────────────────────────────
+	// Headings
 	h1: defineElement<ElementProps>('h1'),
 	h2: defineElement<ElementProps>('h2'),
 	h3: defineElement<ElementProps>('h3'),
@@ -78,7 +209,7 @@ export const el = {
 	h5: defineElement<ElementProps>('h5'),
 	h6: defineElement<ElementProps>('h6'),
 
-	// ─── Text content ─────────────────────────────────────────────────
+	// Text content
 	p: defineElement<ElementProps>('p'),
 	pre: defineElement<ElementProps>('pre'),
 	blockquote: defineElement<BlockquoteProps>('blockquote'),
@@ -88,7 +219,7 @@ export const el = {
 	br: defineElement<ElementProps>('br'),
 	wbr: defineElement<ElementProps>('wbr'),
 
-	// ─── Inline text semantics ────────────────────────────────────────
+	// Inline text semantics
 	a: defineElement<AnchorProps>('a'),
 	strong: defineElement<ElementProps>('strong'),
 	em: defineElement<ElementProps>('em'),
@@ -114,11 +245,11 @@ export const el = {
 	rp: defineElement<ElementProps>('rp'),
 	rt: defineElement<ElementProps>('rt'),
 
-	// ─── Edits ────────────────────────────────────────────────────────
+	// Edits
 	ins: defineElement<InsDelProps>('ins'),
 	del: defineElement<InsDelProps>('del'),
 
-	// ─── Embedded content ─────────────────────────────────────────────
+	// Embedded content
 	img: defineElement<ImgProps>('img'),
 	picture: defineElement<ElementProps>('picture'),
 	video: defineElement<VideoProps>('video'),
@@ -132,7 +263,7 @@ export const el = {
 	map: defineElement<MapProps>('map'),
 	area: defineElement<AreaProps>('area'),
 
-	// ─── Forms ────────────────────────────────────────────────────────
+	// Forms
 	form: defineElement<FormProps>('form'),
 	fieldset: defineElement<FieldsetProps>('fieldset'),
 	legend: defineElement<ElementProps>('legend'),
@@ -148,7 +279,7 @@ export const el = {
 	progress: defineElement<ProgressProps>('progress'),
 	datalist: defineElement<ElementProps>('datalist'),
 
-	// ─── Lists ────────────────────────────────────────────────────────
+	// Lists
 	ul: defineElement<ElementProps>('ul'),
 	ol: defineElement<ElementProps>('ol'),
 	li: defineElement<ElementProps>('li'),
@@ -157,7 +288,7 @@ export const el = {
 	dd: defineElement<ElementProps>('dd'),
 	menu: defineElement<ElementProps>('menu'),
 
-	// ─── Tables ───────────────────────────────────────────────────────
+	// Tables
 	table: defineElement<ElementProps>('table'),
 	thead: defineElement<ElementProps>('thead'),
 	tbody: defineElement<ElementProps>('tbody'),
@@ -169,16 +300,16 @@ export const el = {
 	col: defineElement<ColProps>('col'),
 	colgroup: defineElement<ColgroupProps>('colgroup'),
 
-	// ─── Interactive ──────────────────────────────────────────────────
+	// Interactive
 	details: defineElement<DetailsProps>('details'),
 	summary: defineElement<ElementProps>('summary'),
 	dialog: defineElement<DialogProps>('dialog'),
 
-	// ─── Code and templating ──────────────────────────────────────────
+	// Code and templating
 	template: defineElement<ElementProps>('template'),
 	slot: defineElement<ElementProps>('slot'),
 
-	// ─── Document metadata (rarely used in components but valid) ──────
+	// Document metadata
 	link: defineElement<LinkProps>('link'),
 	meta: defineElement<MetaProps>('meta'),
 	base: defineElement<BaseProps>('base'),
@@ -186,21 +317,14 @@ export const el = {
 	noscript: defineElement<ElementProps>('noscript'),
 	style: defineElement<StyleProps>('style'),
 	title: defineElement<ElementProps>('title'),
-} as const
+}
 
 /**
  * Factory for custom (hyphenated) element tags. Use this for web
  * components and any HTML element not in the `el` namespace.
- *
- * The tag must contain a hyphen (HTML5 custom element naming rule);
- * the template literal type enforces this at compile time.
- *
- * Usage:
- *   const myCard = customElement<MyCardProps>('my-card')
- *   myCard({ variant: 'elevated' }, 'content')
  */
 export function customElement<P extends object = ElementProps>(
 	tag: `${string}-${string}`,
-): ReturnType<typeof defineElement<P>> {
+): ElementFn<P> {
 	return defineElement<P>(tag)
 }

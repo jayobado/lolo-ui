@@ -37,7 +37,9 @@ export type { ControlFlowNode } from './core/renderer/control-flow.ts'
 
 // ─── New: typed element namespaces ────────────────────────────────────────
 export { customElement, el } from './elements/html.ts'
+export type { ElNamespace } from './elements/html.ts'
 export { svg } from './elements/svg.ts'
+export type { SvgNamespace } from './elements/svg.ts'
 
 // ─── New: typed prop interfaces ───────────────────────────────────────────
 // Re-exported so consumers can type their custom components with the same

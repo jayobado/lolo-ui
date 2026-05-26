@@ -1,4 +1,5 @@
 import { defineElement } from '../core/element.ts'
+import type { ElementFn } from '../core/element.ts'
 import type {
 	CircleProps,
 	ClipPathProps,
@@ -28,27 +29,62 @@ import type {
 } from './dom-types.ts'
 
 /**
+ * Type of the `svg` namespace. Explicit for JSR's slow-types check.
+ */
+export interface SvgNamespace {
+	// Root and structural
+	readonly svg: ElementFn<SvgRootProps>
+	readonly g: ElementFn<GroupProps>
+	readonly defs: ElementFn<DefsProps>
+	readonly symbol: ElementFn<SymbolProps>
+	readonly use: ElementFn<UseProps>
+
+	// Basic shapes
+	readonly circle: ElementFn<CircleProps>
+	readonly ellipse: ElementFn<EllipseProps>
+	readonly rect: ElementFn<RectProps>
+	readonly line: ElementFn<LineProps>
+	readonly polyline: ElementFn<PolylineProps>
+	readonly polygon: ElementFn<PolygonProps>
+	readonly path: ElementFn<PathProps>
+
+	// Text
+	readonly text: ElementFn<SvgTextProps>
+	readonly tspan: ElementFn<TspanProps>
+
+	// Embedded
+	readonly image: ElementFn<SvgImageProps>
+	readonly foreignObject: ElementFn<ForeignObjectProps>
+
+	// Gradients and patterns
+	readonly linearGradient: ElementFn<LinearGradientProps>
+	readonly radialGradient: ElementFn<RadialGradientProps>
+	readonly stop: ElementFn<StopProps>
+	readonly pattern: ElementFn<PatternProps>
+
+	// Markers and clipping
+	readonly marker: ElementFn<MarkerProps>
+	readonly clipPath: ElementFn<ClipPathProps>
+	readonly mask: ElementFn<MaskProps>
+
+	// Filters
+	readonly filter: ElementFn<FilterProps>
+	readonly feGaussianBlur: ElementFn<FilterPrimitiveProps>
+	readonly feOffset: ElementFn<FilterPrimitiveProps>
+	readonly feBlend: ElementFn<FilterPrimitiveProps>
+	readonly feFlood: ElementFn<FilterPrimitiveProps>
+	readonly feMerge: ElementFn<FilterPrimitiveProps>
+	readonly feMergeNode: ElementFn<FilterPrimitiveProps>
+	readonly feColorMatrix: ElementFn<FilterPrimitiveProps>
+	readonly feComposite: ElementFn<FilterPrimitiveProps>
+}
+
+/**
  * The `svg` namespace — every SVG element as a typed factory.
  *
- * Usage:
- *   import { svg } from '@jayobado/lolo-ui'
- *   const { circle, rect, path } = svg
- *
- *   svg.svg({ viewBox: '0 0 100 100', width: 200 },
- *     circle({ cx: 50, cy: 50, r: 40, fill: 'blue' }),
- *     rect({ x: 10, y: 10, width: 20, height: 20 }),
- *   )
- *
- * Why a separate namespace from `el`:
- *   - SVG and HTML share several tag names (`text`, `title`, `style`,
- *     `script`, `a`, `image`, `filter`) with different semantics.
- *     `svg.text` is the SVG text element; `el.span` is HTML.
- *   - Per-element prop types catch SVG-on-HTML errors (e.g. setting
- *     `cx` on an HTML element) at compile time.
- *   - The renderer uses the namespace hint to call `createElementNS`
- *     with the SVG URI, which is required for SVG to actually render.
+ * (existing docstring continues...)
  */
-export const svg = {
+export const svg: SvgNamespace = {
 	// Root and structural
 	svg: defineElement<SvgRootProps>('svg', 'svg'),
 	g: defineElement<GroupProps>('g', 'svg'),
@@ -94,4 +130,4 @@ export const svg = {
 	feMergeNode: defineElement<FilterPrimitiveProps>('feMergeNode', 'svg'),
 	feColorMatrix: defineElement<FilterPrimitiveProps>('feColorMatrix', 'svg'),
 	feComposite: defineElement<FilterPrimitiveProps>('feComposite', 'svg'),
-} as const
+}
