@@ -44,6 +44,21 @@ export function signal<T>(initialValue: T): Signal<T> {
 	return { get, set, update }
 }
 
+/**
+ * Type guard: is this value a Signal? Structural check —
+ * matches anything with the `get`, `set`, and `update` method shape.
+ * Used by the renderer's `bind` to dispatch between reactive sources.
+ */
+export function isSignal<T = unknown>(x: unknown): x is Signal<T> {
+	return (
+		x !== null &&
+		typeof x === 'object' &&
+		typeof (x as { get?: unknown }).get === 'function' &&
+		typeof (x as { set?: unknown }).set === 'function' &&
+		typeof (x as { update?: unknown }).update === 'function'
+	)
+}
+
 export function effect(fn: Effect): () => void {
 	const execute = () => {
 		const prevSubs = effectSubscriptions.get(execute)

@@ -20,8 +20,9 @@ The toolkit gives you:
 - Lifecycle scopes — every container has a scope; effects, queries, and
   subscriptions clean up when the scope disposes.
 - A real-DOM container system — containers are factories that take a setup
-  function (returns state) and a content function (returns an `HTMLElement`).
-  No virtual DOM, no reconciliation step.
+  function (returns state) and a content function (returns DOM, either via
+  imperative `h()` calls or via the variadic `el.*` factories with
+  `defineComponent`).
 - A small declarative layer — forms, tables, multi-row sections, and multi-step
   flows expressed as data structures rather than ad-hoc DOM construction.
 - Async data hooks — `useQuery` and `useMutation` for fetch-into-signals
@@ -86,18 +87,19 @@ Add to your `deno.json`:
 ```jsonc
 {
   "imports": {
-    "@jayobado/lolo-ui":            "jsr:@jayobado/lolo-ui@^0.3.0",
-    "@jayobado/lolo-ui/dsl":        "jsr:@jayobado/lolo-ui@^0.3.0/dsl",
-    "@jayobado/lolo-ui/query":      "jsr:@jayobado/lolo-ui@^0.3.0/query",
-    "@jayobado/lolo-ui/hooks":      "jsr:@jayobado/lolo-ui@^0.3.0/hooks",
-    "@jayobado/lolo-ui/primitives": "jsr:@jayobado/lolo-ui@^0.3.0/primitives"
+    "@jayobado/lolo-ui":            "jsr:@jayobado/lolo-ui@^0.4.0",
+    "@jayobado/lolo-ui/dsl":        "jsr:@jayobado/lolo-ui@^0.4.0/dsl",
+    "@jayobado/lolo-ui/query":      "jsr:@jayobado/lolo-ui@^0.4.0/query",
+    "@jayobado/lolo-ui/hooks":      "jsr:@jayobado/lolo-ui@^0.4.0/hooks",
+    "@jayobado/lolo-ui/primitives": "jsr:@jayobado/lolo-ui@^0.4.0/primitives"
   }
 }
 ```
 
 Import paths follow the subpath structure. The root export covers the core
-(signals, scope, container, router, app, `h()`). Each subpath is its own
-focused slice of functionality — see [Subpath reference](#subpath-reference).
+(signals, scope, container, router, app, `h()`, and the `el.*` /
+`defineComponent` / `mount` authoring surface). Each subpath is its own
+focused slice of functionality — see [Subpath reference](docs/subpaths.md).
 
 ### Compiler options
 
@@ -199,16 +201,137 @@ containers, build out tables and lists with the declarative layer, use
 `useQuery` for data fetching, and lean on hooks like `useModal` and
 `useDropdown` for transient UI.
 
+## Authoring components (new in 0.4.0)
+
+`0.4.0` added a variadic authoring surface alongside the existing `h()`
+primitive. The new shape — `el.*`, `svg.*`, `defineComponent`, `mount`, `when`,
+`each` — produces VNodes (lightweight call-graph values), which the renderer
+walks once to build DOM and bind signals.
+
+It's the recommended way to write the inside of a container's `content`
+function, particularly when there's structural reactivity (lists, conditional
+sections) or per-element prop typing matters.
+
+```typescript
+import {
+	defineComponent, el, mount, signal, when, each,
+} from '@jayobado/lolo-ui'
+
+const { div, h2, button, ul, li, input } = el
+
+const TodoList = defineComponent<{ initialItems?: string[] }>((props) => {
+	const items = signal<string[]>(props.initialItems ?? [])
+	const draft = signal('')
+
+	const addItem = () => {
+		const v = draft.get().trim()
+		if (!v) return
+		items.update(curr => [...curr, v])
+		draft.set('')
+	}
+
+	return div({ class: 'todo' },
+		h2('Todo list'),
+
+		div({ class: 'todo__input' },
+			input({
+				type: 'text',
+				value: draft,
+				onInput: (e) => draft.set((e.target as HTMLInputElement).value),
+				onKeyDown: (e) => { if (e.key === 'Enter') addItem() },
+			}),
+			button({ onClick: addItem }, 'Add'),
+		),
+
+		when(
+			() => items.get().length === 0,
+			() => div({ class: 'todo__empty' }, 'No items yet.'),
+			() => ul({},
+				each(
+					items,
+					(item) => li({}, item),
+					(item, i) => `${i}-${item}`,
+				),
+			),
+		),
+	)
+})
+
+// In a container's content function:
+content: () => {
+	const root = h('div', { class: 'page' })
+	mount(TodoList({ initialItems: ['Buy milk'] }), root)
+	return root
+}
+```
+
+What you get:
+
+- **Per-element typed props.** `button({ type: 'submit' })` autocompletes;
+  `a({ src: '/x' })` errors. All 88 HTML elements and 32 SVG elements have
+  prop interfaces.
+- **Reactive props and children by default.** Signals or thunks can appear
+  anywhere a value can — `h2('Count: ', count)` binds the signal to a
+  text node, `input({ disabled: isLoading })` binds the signal to the
+  attribute. No manual `effect()` wiring.
+- **Structural reactivity** via `when` and `each`. `each` performs keyed
+  reconciliation; a stable key function is required.
+- **Scope-based lifecycle.** Event listeners and effects clean up when the
+  component unmounts; no explicit disposers in user code.
+
+See [Authoring components](docs/components.md) for the full guide.
+
+### Coexistence with `h()`
+
+`h()` is unchanged in `0.4.0` and remains the lower-level escape hatch. The two
+surfaces compose: a component's children can include `HTMLElement` returned by
+`h()`, and a `content` function can use either or both.
+
+```typescript
+content: () => {
+	// h()-based DSL output and new components in the same container:
+	const root = h('div', { class: 'page' })
+	root.append(h('h1', null, 'Dashboard'))
+
+	const formEl = renderForm(myForm, { onSubmit })  // HTMLElement
+	mount(
+		el.div({ class: 'section' },
+			el.h2('Edit'),
+			formEl,                                       // accepted as a child
+		),
+		root,
+	)
+
+	return root
+}
+```
+
+When to use which:
+
+- **Use `el.*` / `defineComponent`** for views with reactive lists, conditional
+  sections, or many small composed pieces. The variadic call style and typed
+  props are friction-reducing.
+- **Use `h()`** for low-level DOM construction, performance-critical inner
+  loops, or places where you need an `HTMLElement` return value directly
+  (e.g., inside a hook's setup).
+
+The form, table, and steps DSLs continue to return `HTMLElement` and remain
+the recommended way to build forms and tables. Component authoring is for the
+glue and custom views around them.
+
 ## Where to go next
 
 - **[Concepts](docs/concepts.md)** — signals, scope, containers. The mental
   model that everything else is built on.
+- **[Authoring components](docs/components.md)** — the `el.*`, `defineComponent`,
+  `when`, `each`, SVG, and lifecycle reference.
 - **[The declarative layer](docs/declarative.md)** — forms, tables, multi-row
   sections, and multi-step flows.
 - **[Subpath reference](docs/subpaths.md)** — what each subpath exports at a
   glance.
 - **[Examples](docs/examples.md)** — signup forms, login forms, expense
-  entry, search boxes. Real shapes from real apps.
+  entry, search boxes, dashboard view, editable note list. Real shapes from
+  real apps.
 - **[Patterns](docs/patterns.md)** — app-level patterns lolo-ui doesn't
   ship: dialogs, nav menus, dropdown menus, route-aware links.
 

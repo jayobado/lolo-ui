@@ -48,6 +48,91 @@ import type { Container, RouteConfig } from '@jayobado/lolo-ui'
 
 See [Concepts → Containers](concepts.md#containers) and [Concepts → `h()`](concepts.md#h).
 
+### Components and renderer (new in 0.4.0)
+
+```typescript
+import {
+	mount, defineComponent, onMount, onCleanup,
+	when, each, isControlFlowNode,
+	el, svg, customElement,
+	defineElement, isVNode,
+} from '@jayobado/lolo-ui'
+
+import type {
+	Child, ComponentFn, ComponentVNode, ElementVNode, Reactive, VNode,
+	ComponentFactory, ElementFn, ControlFlowNode,
+} from '@jayobado/lolo-ui'
+```
+
+- **`mount(child, parent)`** — attach a `Child` (VNode, primitive, signal, or
+  DOM node) to a parent element. Returns a disposer.
+- **`defineComponent<P>(fn)`** — wrap a component function into a callable
+  factory that produces VNodes.
+- **`onMount(fn)`** — register a callback to run after the component's DOM is
+  attached. Returning a cleanup function from `fn` registers it as a cleanup.
+- **`onCleanup(fn)`** — register a cleanup callback on the ambient scope.
+  Same function as `scope.onCleanup(fn)`; this convenience reads the ambient
+  scope.
+- **`when(predicate, then, else?)`** — conditional rendering. Mount the active
+  branch; dispose the inactive one.
+- **`each(items, render, keyFn)`** — keyed list rendering. Required stable
+  key function.
+- **`el`** — namespace object with typed factories for every HTML element.
+  Destructure at file top: `const { div, h2, button } = el`.
+- **`svg`** — namespace object with typed factories for SVG elements.
+- **`customElement<P>(tag)`** — factory for hyphenated custom-element tags
+  (web components, etc.).
+- **`defineElement<P>(tag, namespace?)`** — lower-level factory for building
+  your own typed element shortcuts. Used internally by `el` and `svg`.
+
+See [Authoring components](components.md) for the full guide.
+
+### Per-element prop interfaces
+
+```typescript
+import type {
+	ElementProps, GlobalAttrs, GlobalEvents, EventHandler,
+	AnchorProps, ButtonProps, InputProps, FormProps, LabelProps, ImgProps,
+	TextareaProps, SelectProps, OptionProps, OptgroupProps, FieldsetProps,
+	OutputProps, MeterProps, ProgressProps,
+	VideoProps, AudioProps, SourceProps, TrackProps,
+	IframeProps, CanvasProps, ObjectProps, EmbedProps,
+	DetailsProps, DialogProps, TimeProps, DataProps,
+	BlockquoteProps, QuoteProps, InsDelProps,
+	TableCellProps, ThProps, ColProps, ColgroupProps,
+	MapProps, AreaProps,
+	LinkProps, MetaProps, BaseProps, ScriptProps, StyleProps,
+} from '@jayobado/lolo-ui'
+
+import type {
+	SvgGlobalAttrs, SvgRootProps, GroupProps,
+	CircleProps, EllipseProps, RectProps, LineProps,
+	PolylineProps, PolygonProps, PathProps,
+	SvgTextProps, TspanProps,
+	SvgImageProps, ForeignObjectProps,
+	LinearGradientProps, RadialGradientProps, StopProps, PatternProps,
+	MarkerProps, ClipPathProps, MaskProps,
+	FilterProps, FilterPrimitiveProps,
+	DefsProps, UseProps, SymbolProps,
+} from '@jayobado/lolo-ui'
+```
+
+Re-exported so you can type your own components with the same interfaces the
+built-in factories use. For example, a custom button that adds an `icon` prop:
+
+```typescript
+interface IconButtonProps extends ButtonProps {
+	icon: HTMLElement
+}
+
+const IconButton = defineComponent<IconButtonProps>((props) =>
+	el.button({ ...props, class: ['icon-button', props.class].join(' ') },
+		props.icon,
+		props.children,
+	)
+)
+```
+
 ### Reactive route state
 
 ```typescript

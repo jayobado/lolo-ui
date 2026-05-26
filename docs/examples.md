@@ -480,7 +480,322 @@ Notes:
   non-null assertion is honest — if you call `userSearch()` outside a scope,
   the effect leaks. Document this contract.
 
+## Dashboard view
+
+A view that loads data via `useQuery`, branches on loading/error/empty/data
+states, and renders reactive metrics. Demonstrates the component-authoring
+surface from `0.4.0` — `defineComponent`, `el.*`, `when`, and signals bound
+directly to children and props.
+
+```typescript
+import { defineContainer, el, mount, defineComponent, when } from '@jayobado/lolo-ui'
+import { useQuery } from '@jayobado/lolo-ui/query'
+
+import { api } from './lib/api.ts'
+
+interface DashboardMetrics {
+	totalUsers:   number
+	activeUsers:  number
+	totalRevenue: number
+	growthRate:   number
+}
+
+const { div, section, h1, h2, p, span, button } = el
+
+const MetricCard = defineComponent<{
+	label: string
+	value: () => string | number
+	delta?: () => number
+}>((props) =>
+	div({ class: 'metric-card' },
+		p({ class: 'metric-label' }, props.label),
+		p({ class: 'metric-value' }, props.value),
+		when(
+			() => props.delta !== undefined,
+			() => p({
+				class: () => {
+					const d = props.delta!()
+					return d > 0 ? 'metric-delta metric-delta--positive'
+					     : d < 0 ? 'metric-delta metric-delta--negative'
+					     : 'metric-delta'
+				},
+			}, () => {
+				const d = props.delta!()
+				const sign = d > 0 ? '+' : ''
+				return `${sign}${d.toFixed(1)}%`
+			}),
+		),
+	)
+)
+
+export const dashboardContainer = defineContainer({
+	route: { path: '/dashboard', title: 'Dashboard' },
+
+	setup() {
+		const metrics = useQuery(() => api.metrics.summary())
+		return { metrics }
+	},
+
+	content: ({ metrics }) => {
+		const root = h('div', { class: 'dashboard' })
+
+		mount(
+			section({ class: 'dashboard__content' },
+				h1('Dashboard'),
+
+				when(
+					metrics.loading,
+					() => p({ class: 'dashboard__state' }, 'Loading…'),
+					() => when(
+						metrics.error,
+						() => div({ class: 'dashboard__state dashboard__state--error' },
+							p('Failed to load metrics.'),
+							button({ onClick: () => metrics.refetch() }, 'Retry'),
+						),
+						() => when(
+							() => !metrics.data.get(),
+							() => p({ class: 'dashboard__state' }, 'No data.'),
+							() => {
+								const data = (): DashboardMetrics => metrics.data.get()!
+								return div({ class: 'dashboard__metrics' },
+									MetricCard({
+										label: 'Total users',
+										value: () => data().totalUsers.toLocaleString(),
+									}),
+									MetricCard({
+										label: 'Active users',
+										value: () => data().activeUsers.toLocaleString(),
+									}),
+									MetricCard({
+										label: 'Revenue',
+										value: () => `$${data().totalRevenue.toLocaleString()}`,
+										delta: () => data().growthRate,
+									}),
+								)
+							},
+						),
+					),
+				),
+			),
+			root,
+		)
+
+		return root
+	},
+})
+```
+
+Worth noting:
+
+- **`MetricCard` is a reusable component.** Its props are typed: `label` is a
+  string, `value` is a thunk returning the displayed value, `delta` is an
+  optional thunk returning a percentage. The thunks make the values reactive
+  — when the underlying data signal changes, only the affected text nodes
+  update.
+- **State branching with nested `when`.** Each state (`loading`, `error`,
+  `empty`, `data`) gets its own branch. When the state transitions, the
+  outgoing branch unmounts (effects clean up) and the new branch mounts
+  fresh. There's no manual show/hide via `display: none`.
+- **`mount` bridges from VNode to the container's `HTMLElement` root.**
+  The container's content function returns `HTMLElement`, so we wrap the
+  VNode tree with `mount(..., root)`. The mount's scope is owned by the
+  container's scope — when the user navigates away, everything cleans up
+  automatically.
+- **The class thunk on the delta indicator.** Reading `props.delta!()` inside
+  a thunk both establishes reactivity (the class re-evaluates when the data
+  changes) and lets us derive the right class name from the current value.
+- **Reactive children via thunks.** `p({ ... }, () => `${sign}${d.toFixed(1)}%`)`
+  binds the thunk to a text node. When the thunk's dependencies change,
+  only the text content updates — no surrounding DOM rebuild.
+
+Compared to the imperative equivalent (with `h()` plus `scope.effect` to wire
+each piece), this reads top-to-bottom as the visual structure with reactivity
+woven through rather than bolted on.
+
+## Editable note list
+
+A list where each row can be edited inline, toggled, or deleted. Demonstrates
+`each` with keyed reconciliation, per-row local state, and the mount/unmount
+lifecycle of rows.
+
+```typescript
+import {
+	defineContainer, defineComponent, el, mount,
+	signal, when, each,
+} from '@jayobado/lolo-ui'
+import { useMutation } from '@jayobado/lolo-ui/query'
+import { toast } from '@jayobado/lolo-ui/primitives'
+
+import { api } from './lib/api.ts'
+
+interface Note {
+	id:        string
+	title:     string
+	done:      boolean
+	createdAt: string
+}
+
+const { div, ul, li, input, button, p } = el
+
+const NoteRow = defineComponent<{
+	note:     Note
+	onUpdate: (patch: Partial<Note>) => Promise<void>
+	onDelete: () => Promise<void>
+}>((props) => {
+	const editing = signal(false)
+	const draft   = signal(props.note.title)
+
+	const save = async () => {
+		const next = draft.get().trim()
+		if (!next || next === props.note.title) {
+			editing.set(false)
+			return
+		}
+		try {
+			await props.onUpdate({ title: next })
+			editing.set(false)
+		} catch {
+			toast.error('Failed to save')
+		}
+	}
+
+	return li({
+		class: () => props.note.done
+			? 'note-row note-row--done'
+			: 'note-row',
+	},
+		input({
+			type: 'checkbox',
+			checked: props.note.done,
+			onChange: (e) => {
+				const done = (e.target as HTMLInputElement).checked
+				props.onUpdate({ done }).catch(() => toast.error('Failed to update'))
+			},
+		}),
+
+		when(
+			editing,
+			() => input({
+				type: 'text',
+				class: 'note-row__edit',
+				value: draft,
+				onInput: (e) => draft.set((e.target as HTMLInputElement).value),
+				onKeyDown: (e) => {
+					if (e.key === 'Enter') save()
+					if (e.key === 'Escape') {
+						draft.set(props.note.title)
+						editing.set(false)
+					}
+				},
+				onBlur: save,
+				ref: (el) => (el as HTMLInputElement).focus(),
+			}),
+			() => p({
+				class: 'note-row__title',
+				onClick: () => editing.set(true),
+			}, props.note.title),
+		),
+
+		button({
+			class: 'note-row__delete',
+			onClick: () => {
+				props.onDelete().catch(() => toast.error('Failed to delete'))
+			},
+		}, 'Delete'),
+	)
+})
+
+export const notesContainer = defineContainer({
+	route: { path: '/notes', title: 'Notes' },
+
+	setup() {
+		const notes = signal<Note[]>([])
+
+		const loadNotes = async () => {
+			notes.set(await api.notes.list())
+		}
+
+		const updateNote = useMutation(
+			(args: { id: string; patch: Partial<Note> }) =>
+				api.notes.update(args.id, args.patch),
+			{ onSuccess: loadNotes },
+		)
+
+		const deleteNote = useMutation(
+			(id: string) => api.notes.delete(id),
+			{ onSuccess: loadNotes },
+		)
+
+		loadNotes()
+
+		return { notes, updateNote, deleteNote }
+	},
+
+	content: ({ notes, updateNote, deleteNote }) => {
+		const root = h('div', { class: 'page' })
+
+		mount(
+			div({ class: 'notes' },
+				h1('Notes'),
+
+				when(
+					() => notes.get().length === 0,
+					() => p({ class: 'notes__empty' }, 'No notes yet.'),
+					() => ul({ class: 'notes__list' },
+						each(
+							() => notes.get(),
+							(note) => NoteRow({
+								note,
+								onUpdate: (patch) => updateNote.mutate({ id: note.id, patch }),
+								onDelete: () => deleteNote.mutate(note.id),
+							}),
+							(note) => note.id,
+						),
+					),
+				),
+			),
+			root,
+		)
+
+		return root
+	},
+})
+```
+
+What this demonstrates:
+
+- **Keyed reconciliation via `each`.** The key function returns `note.id` — a
+  stable identifier across updates. When `notes` changes (a row is added,
+  deleted, or updated), `each` preserves the DOM and scope of rows that
+  remain. A row being edited keeps its `editing` and `draft` signals through
+  changes to other rows.
+- **Per-row state is local to the row.** The `editing` and `draft` signals
+  are created inside `NoteRow`'s body. They belong to the row's scope —
+  when the row unmounts (because the note was deleted), those signals
+  garbage-collect. No manual cleanup, no shared state contortions.
+- **The autofocus pattern.** The edit input's `ref` callback calls `.focus()`
+  on the element when it's created. This works because the input is mounted
+  fresh each time `editing` flips to `true` — `when` mounts the active branch
+  and disposes the inactive one. The element is a new DOM node each time,
+  so the ref fires.
+- **`onBlur: save` plus Enter/Escape.** Common inline-edit pattern. Blur
+  saves, Enter saves, Escape discards. The branch unmounts on `editing.set(false)`,
+  which automatically tears down the input's event listeners.
+- **Optimistic refresh via `onSuccess`.** `useMutation`'s `onSuccess` calls
+  `loadNotes()` to re-fetch. For a real app you'd want to update the local
+  signal directly to avoid the round-trip, but the example keeps it simple.
+- **The container still uses `h()` for the root and uses `mount` to bridge.**
+  Same pattern as the dashboard example — the container's `content` returns
+  `HTMLElement`, and `mount` attaches the VNode tree to it.
+
+If `each` used positional keys (the default in some frameworks), deleting
+the middle row would cause every subsequent row to remount — losing focus,
+losing the editing state, losing the draft text. The required `keyFn` makes
+the right thing the default.
+
 ## Where to go next
 
+- **[Authoring components](components.md)** — the full guide to `el.*`,
+  `defineComponent`, control flow, and SVG.
 - **[Patterns](patterns.md)** — app-level patterns built on top of lolo-ui
   (dialogs, dropdown menus, nav menus, route-aware links).
