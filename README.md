@@ -1,5 +1,21 @@
 # lolo-ui
 
+> [!IMPORTANT]
+> **Deprecated.** lolo-ui has been folded into [`@jayobado/kiln`](https://jsr.io/@jayobado/kiln)
+> as its bundled client and is now published from there. Import the same toolkit
+> from the `client` subpaths instead — no separate dependency:
+>
+> ```ts
+> import { signal, defineContainer, createApp } from '@jayobado/kiln/client'
+> import { defineForm, renderForm }             from '@jayobado/kiln/client/dsl'
+> import { useQuery, useMutation }              from '@jayobado/kiln/client/query'
+> import { createClient }                       from '@jayobado/kiln/client/rpc'
+> ```
+>
+> kiln pairs this client with a typed BFF (auth, procedures, RPC) and the dev
+> server/build, so the client talks to its backend over end-to-end-typed RPC.
+> This package will not receive further updates.
+
 A small TypeScript UI toolkit for building real-DOM applications. Lean,
 opinionated, dependency-light, and centered on a signals-based reactive model.
 
